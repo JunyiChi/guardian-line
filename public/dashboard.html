@@ -7,21 +7,22 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/site.css" />
   <style>
     :root {
-      /* Dark navy-purple to match the homepage's "How it works" band; built for a big screen. */
-      --navy-0: #0f0d2e;
-      --navy: #17134a;
-      --navy-2: #211a5e;
-      --navy-3: #2a2170;
-      --line: rgba(185, 168, 255, .26);
-      --gold: #b9a8ff;
-      --gold-soft: #d9cfff;
-      --text: #f4f2ff;
-      --muted: #b3aed6;
-      --green: #2ecc71;
-      --yellow: #f5c518;
-      --red: #ff4d4d;
+      /* Light lavender + purple, like the rest of the site. Token names are historical. */
+      --navy-0: #ffffff;
+      --navy: #ffffff;
+      --navy-2: #ffffff;
+      --navy-3: #f1edff;
+      --line: rgba(91, 63, 214, .16);
+      --gold: #5b3fd6;
+      --gold-soft: #5b3fd6;
+      --text: #14123a;
+      --muted: #5f5d7a;
+      --green: #16a34a;
+      --yellow: #d97706;
+      --red: #dc2626;
       --red-deep: #8e1111;
       --radius: 18px;
     }
@@ -29,7 +30,9 @@
     html, body { margin: 0; }
     body {
       font-family: "Inter", system-ui, -apple-system, "Segoe UI", "Hiragino Sans", sans-serif;
-      background: radial-gradient(1100px 520px at 85% -10%, rgba(124, 92, 240, .35) 0%, transparent 60%), linear-gradient(160deg, #0f0d2e 0%, #1a1450 60%, #241a66 100%) fixed;
+      background:
+        repeating-linear-gradient(135deg, rgba(91, 63, 214, .035) 0 2px, transparent 2px 26px) fixed,
+        linear-gradient(180deg, #ebe4ff 0%, #f6f3ff 380px, #fbfaff 100%);
       color: var(--text);
       font-size: clamp(16px, 1.15vw, 22px);
       line-height: 1.5;
@@ -37,13 +40,13 @@
     }
     .en { display: block; font-size: .62em; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 
-    /* Header */
-    header {
-      display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-      padding: 18px clamp(16px, 3vw, 40px);
-      border-bottom: 2px solid var(--gold);
-      background: linear-gradient(180deg, var(--navy) 0%, var(--navy-0) 100%);
+    /* Toolbar under the shared navbar */
+    .dash-bar {
+      display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap;
+      padding: clamp(12px, 1.6vw, 24px) clamp(16px, 3vw, 40px) 0;
     }
+    .dash-bar h1 { margin: 0; font-size: clamp(1.5rem, 2.4vw, 2.6rem); font-weight: 800; letter-spacing: -.02em; color: var(--text); line-height: 1.15; }
+    .dash-bar p { margin: 2px 0 0; color: var(--muted); font-size: clamp(.95rem, 1.1vw, 1.2rem); }
     .brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
     .brand svg { flex: none; width: clamp(44px, 3.6vw, 64px); height: auto; }
     .brand h1 { margin: 0; font-size: clamp(1.4rem, 2.4vw, 2.6rem); font-weight: 800; color: var(--gold); line-height: 1.15; }
@@ -58,10 +61,10 @@
     button.demo {
       font: inherit; font-weight: 700; cursor: pointer;
       padding: 10px 22px; border-radius: 999px;
-      border: 2px solid var(--gold); background: transparent; color: var(--gold);
-      transition: background .2s, color .2s;
+      border: 0; color: #fff; background: linear-gradient(135deg, #14123a 0%, #3a2a9a 55%, #6a4ff0 100%);
+      box-shadow: 0 8px 22px rgba(58, 42, 154, .3); transition: transform .15s;
     }
-    button.demo:hover:not(:disabled) { background: var(--gold); color: var(--navy-0); }
+    button.demo:hover:not(:disabled) { transform: translateY(-1px); }
     button.demo:disabled { opacity: .5; cursor: default; }
     button.demo .en { display: inline; margin-left: 6px; color: inherit; opacity: .75; }
 
@@ -78,7 +81,8 @@
     #alert.show { display: grid; grid-template-columns: auto 1fr auto; gap: clamp(16px, 2vw, 32px); align-items: center; }
     @keyframes alarm { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, .7); } 50% { box-shadow: 0 0 0 14px rgba(255, 77, 77, 0); } }
     #alert .icon { font-size: clamp(3rem, 5vw, 5.5rem); line-height: 1; }
-    #alert h2 { margin: 0; font-size: clamp(1.6rem, 3vw, 3.2rem); font-weight: 800; line-height: 1.15; }
+    #alert { color: #fff; }
+    #alert h2 { margin: 0; font-size: clamp(1.6rem, 3vw, 3.2rem); font-weight: 800; line-height: 1.15; color: #fff; }
     #alert h2 .en { color: #ffd6d6; font-size: .4em; }
     #alert .type { margin: 8px 0 4px; font-size: clamp(1.15rem, 1.8vw, 2rem); font-weight: 700; }
     #alert .reason { margin: 0; font-size: clamp(1rem, 1.4vw, 1.5rem); opacity: .95; }
@@ -96,7 +100,7 @@
     /* Live grid */
     .live { display: grid; grid-template-columns: minmax(320px, 0.85fr) 1.4fr; gap: clamp(16px, 1.6vw, 28px); align-items: stretch; }
     .card {
-      background: linear-gradient(180deg, var(--navy-2) 0%, var(--navy) 100%);
+      background: #fff; box-shadow: 0 10px 30px rgba(20, 18, 58, .07);
       border: 1px solid var(--line); border-radius: var(--radius);
       padding: clamp(16px, 1.6vw, 28px);
       min-width: 0;
@@ -105,7 +109,7 @@
     .left { display: grid; gap: clamp(16px, 1.6vw, 28px); grid-template-rows: auto 1fr; }
 
     .status { display: flex; align-items: center; gap: 16px; }
-    .status .dot { flex: none; width: 22px; height: 22px; border-radius: 50%; background: #5d6b85; }
+    .status .dot { flex: none; width: 22px; height: 22px; border-radius: 50%; background: #b8b5d0; }
     .status[data-s="ringing"] .dot { background: var(--yellow); animation: ring 0.9s ease-in-out infinite; }
     .status[data-s="in-call"] .dot { background: var(--green); box-shadow: 0 0 14px var(--green); }
     .status[data-s="ended"] .dot { background: var(--muted); }
@@ -118,7 +122,7 @@
     /* Risk meter */
     .meter { display: flex; flex-direction: column; align-items: center; text-align: center; }
     .meter svg { width: 100%; max-width: 440px; height: auto; overflow: visible; }
-    .meter .track { stroke: rgba(255,255,255,.1); }
+    .meter .track { stroke: #ece8fb; }
     .meter .arc { transition: stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1), stroke .5s; }
     .meter .score { font-size: clamp(3.6rem, 7vw, 8rem); font-weight: 800; line-height: 1; margin-top: -0.95em; font-variant-numeric: tabular-nums; transition: color .5s; }
     .meter .band { margin-top: 10px; font-size: clamp(1.2rem, 1.8vw, 2rem); font-weight: 800; transition: color .5s; }
@@ -133,11 +137,11 @@
     .sig {
       display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center;
       padding: 10px 8px; border-radius: 12px; font-weight: 700; font-size: clamp(.95rem, 1.2vw, 1.3rem); line-height: 1.2;
-      border: 2px solid rgba(255,255,255,.14); color: rgba(244,242,255,.45); background: rgba(255,255,255,.03);
+      border: 2px solid rgba(20, 18, 58, .1); color: #8a88a6; background: #faf9ff;
       transition: background .4s, color .4s, border-color .4s, box-shadow .4s;
     }
     .sig .en { display: block; font-size: .6em; color: inherit; opacity: .8; }
-    .sig.on { background: var(--red); border-color: #ffb3b3; color: #fff; box-shadow: 0 0 18px rgba(255,77,77,.55); animation: lit .5s ease-out; }
+    .sig.on { background: var(--red); border-color: var(--red); color: #fff; box-shadow: 0 6px 18px rgba(220, 38, 38, .35); animation: lit .5s ease-out; }
     @keyframes lit { from { transform: scale(1.12); } }
 
     /* Transcript */
@@ -153,22 +157,22 @@
     .msg .who .en { display: inline; margin-left: 6px; }
     .msg .bubble { padding: 12px 18px; border-radius: 18px; font-size: clamp(1.1rem, 1.5vw, 1.6rem); line-height: 1.45; }
     .msg.caller { align-self: flex-start; }
-    .msg.caller .who { color: #ff9c9c; }
-    .msg.caller .bubble { background: var(--navy-3); border: 1px solid rgba(255, 255, 255, .12); border-top-left-radius: 4px; }
+    .msg.caller .who { color: #b91c1c; }
+    .msg.caller .bubble { background: #fff1f1; border: 1px solid #ffd5d5; border-top-left-radius: 4px; }
     .msg.protected { align-self: flex-end; align-items: flex-end; }
     .msg.protected .who { color: var(--gold-soft); }
-    .msg.protected .bubble { background: rgba(185, 168, 255, .18); border: 1px solid rgba(185, 168, 255, .5); border-top-right-radius: 4px; }
+    .msg.protected .bubble { background: #f1edff; border: 1px solid rgba(91, 63, 214, .25); border-top-right-radius: 4px; }
     .msg.interim .bubble { opacity: .6; font-style: italic; }
     .msg.interim .bubble::after { content: " …"; }
 
     /* History */
     .history table { width: 100%; border-collapse: collapse; font-size: 1em; }
     .history th { text-align: left; font-weight: 700; color: var(--gold); padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: bottom; }
-    .history td { padding: 14px; border-bottom: 1px solid rgba(255,255,255,.06); vertical-align: top; }
+    .history td { padding: 14px; border-bottom: 1px solid rgba(20, 18, 58, .07); vertical-align: top; }
     .history td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .pill { display: inline-block; min-width: 3.2em; text-align: center; padding: 3px 12px; border-radius: 999px; font-weight: 800; color: #0b1d3a; }
+    .pill { display: inline-block; min-width: 3.2em; text-align: center; padding: 3px 12px; border-radius: 999px; font-weight: 800; color: #fff; }
     .row-normal td.sum { color: var(--muted); }
-    .row-scam td.sum { color: #ffd0d0; }
+    .row-scam td.sum { color: #b91c1c; }
     .history .none { color: var(--muted); padding: 18px 4px; }
 
     /* Phone / narrow */
@@ -179,7 +183,7 @@
       .msg { max-width: 92%; }
       #chat { max-height: 55vh; }
       .history thead { display: none; }
-      .history tr { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+      .history tr { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 12px 0; border-bottom: 1px solid rgba(20, 18, 58, .08); }
       .history td { padding: 0; border: 0; }
       .history td.sum, .history td.type { grid-column: 1 / -1; }
     }
@@ -196,34 +200,23 @@
     .jevinfo { margin-top: 6px; color: var(--muted); font-size: .8em; min-height: 1.2em; }
     .jevinfo b { color: var(--gold-soft); }
     .tier { font-size: .55em; color: var(--muted); margin-left: 8px; font-weight: 500; }
-    select.lang { font: inherit; font-size: .8em; color: var(--text); background: var(--navy-0); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; }
+    .dash-bar select.lang { font: inherit; font-size: .8em; color: var(--text); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand">
-      <!-- Guardian shield -->
-      <svg viewBox="0 0 48 54" aria-hidden="true">
-        <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1d77e"/><stop offset="1" stop-color="#b8901f"/></linearGradient></defs>
-        <path d="M24 2 L44 10 V25 C44 39 35 47 24 52 C13 47 4 39 4 25 V10 Z" fill="#0b1d3a" stroke="url(#g)" stroke-width="3.5" stroke-linejoin="round"/>
-        <path d="M24 9 L37 14.5 V25 C37 35 31 41 24 44.5 C17 41 11 35 11 25 V14.5 Z" fill="url(#g)" opacity=".18"/>
-        <path d="M15 27 l6.5 6.5 L34 20" fill="none" stroke="url(#g)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <div>
-        <h1>Wessuwan</h1>
-        <p data-i18n="brand.tagline">AI guardian against phone scams</p>
-      </div>
+  <header class="site" id="site-header"></header>
+  <div class="dash-bar">
+    <div>
+      <h1 data-i18n="dash.title">Live dashboard</h1>
+      <p data-i18n="brand.tagline">AI guardian against phone scams</p>
     </div>
     <div class="header-right">
-      <a class="navlink" href="/" data-i18n="nav.home">Home</a>
-      <a class="navlink" href="/try" data-i18n="nav.try">Try it</a>
-      <a class="navlink" href="/setup" data-i18n="nav.setup">Setup</a>
       <select class="lang" id="lang" aria-label="Language"></select>
       <div class="conn" id="conn"><i></i><span data-i18n="dash.connecting">Connecting…</span></div>
       <button class="demo" id="demo">▶ <span data-i18n="dash.demo">Demo mode</span></button>
     </div>
-  </header>
+  </div>
 
   <main>
     <section id="alert" role="alert" aria-live="assertive">
@@ -308,6 +301,7 @@
   </main>
 
   <script src="/i18n.js"></script>
+  <script src="/site.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);

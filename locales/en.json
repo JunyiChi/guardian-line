@@ -112,6 +112,7 @@
     "reportPhone": "call {phone}"
   },
   "dash": {
+    "title": "Live dashboard",
     "callStatus": "Call status",
     "idle": "No active call",
     "ringing": "Ringing…",
