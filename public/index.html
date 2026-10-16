@@ -4,78 +4,203 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wessuwan</title>
-  <meta name="description" content="Wessuwan: an AI guardian that protects elderly people from phone scams in real time." />
+  <meta name="description" content="Wessuwan: an AI guardian that stops phone scams during the call, warns the person and alerts their family before money moves." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/site.css" />
   <style>
-    .hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; align-items: center; padding: 18px 0 28px; }
-    @media (max-width: 860px) { .hero { grid-template-columns: minmax(0, 1fr); } }
-    .hero h1 { font-size: clamp(2rem, 4.6vw, 3.2rem); margin: 0 0 14px; color: var(--gold); font-weight: 800; line-height: 1.1; }
-    .hero p.lead { margin: 0 0 12px; font-size: clamp(1.1rem, 2vw, 1.3rem); max-width: 40em; }
-    .cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 22px; }
-    .cta .btn:not(.big) { font-size: .95rem; padding: 8px 16px; }
-    .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
-    .steps li { display: flex; gap: 12px; align-items: flex-start; }
-    .steps b.n { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: var(--navy-0); }
-    .three { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
-    @media (max-width: 860px) { .three { grid-template-columns: minmax(0, 1fr); } }
-    h2.sec { margin: 30px 0 12px; }
-    .quick { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
-    .quick a { text-decoration: none; color: var(--text); display: block; transition: transform .15s, border-color .15s; }
-    .quick a:hover { transform: translateY(-2px); border-color: var(--gold); }
-    .tag { font-size: .75rem; font-weight: 800; border-radius: 6px; padding: 1px 8px; }
-    .tag.scam { background: rgba(255, 77, 77, .2); color: #ffb3b3; }
-    .tag.normal { background: rgba(46, 204, 113, .18); color: #a5f0c5; }
-    .quick h3 { margin: 8px 0 4px; font-size: 1.02rem; }
-    .quick p { margin: 0; color: var(--muted); font-size: .92rem; }
-    .links { display: flex; gap: 12px; flex-wrap: wrap; }
-    .links a[data-missing] { opacity: .5; pointer-events: none; }
-    .story { color: var(--muted); font-style: italic; }
+    /* Homepage only: a light landing page. The app pages keep the navy + gold look from site.css. */
+    body.home {
+      --ink: #14123a; --ink-2: #3b3a5a; --soft: #6b6a86; --purple: #5b3fd6; --purple-2: #7c5cf0; --lav: #efeaff;
+      background: #fbfaff; color: var(--ink);
+    }
+    body.home a { color: inherit; }
+    .home .container { max-width: 1180px; margin-left: auto; margin-right: auto; padding-left: 20px; padding-right: 20px; }
+
+    /* Hero: lavender-to-white gradient with faint diagonal stripes. */
+    .hero-bg {
+      position: relative; margin-top: -76px; padding: 120px 0 72px; overflow: hidden;
+      background:
+        repeating-linear-gradient(135deg, rgba(91, 63, 214, .045) 0 2px, transparent 2px 26px),
+        linear-gradient(180deg, #e4dcff 0%, #f3efff 45%, #fbfaff 100%);
+    }
+    .hero { text-align: center; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid rgba(91, 63, 214, .2); color: var(--purple); font-weight: 700; font-size: .9rem; padding: 6px 14px; border-radius: 999px; box-shadow: 0 4px 14px rgba(91, 63, 214, .1); }
+    .pill i { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, .18); }
+    .hero h1 { font-size: clamp(2.3rem, 6vw, 4.2rem); line-height: 1.05; letter-spacing: -.035em; font-weight: 800; margin: 20px auto 0; max-width: 15ch; color: var(--ink); }
+    .rotator { display: block; height: 1.15em; overflow: hidden; margin-top: 6px; }
+    .rotator span {
+      display: inline-block; background: linear-gradient(90deg, var(--ink) 0%, var(--purple) 60%, var(--purple-2) 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent; transition: opacity .35s, transform .35s;
+    }
+    .rotator span.out { opacity: 0; transform: translateY(40%); }
+    .hero .lead { font-size: clamp(1.05rem, 2vw, 1.25rem); color: var(--ink-2); max-width: 38em; margin: 20px auto 0; line-height: 1.55; }
+    .hero .ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
+    .b { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; font-size: 1.05rem; text-decoration: none; padding: 14px 26px; border-radius: 999px; transition: transform .15s, box-shadow .15s; }
+    .b:hover { transform: translateY(-1px); }
+    .b.main { color: #fff !important; background: linear-gradient(135deg, #14123a 0%, #3a2a9a 55%, #6a4ff0 100%); box-shadow: 0 10px 26px rgba(58, 42, 154, .35); }
+    .b.ghost { background: #fff; color: var(--ink); border: 1px solid rgba(20, 18, 58, .14); }
+    .b:focus-visible { outline: 3px solid var(--purple-2); outline-offset: 3px; }
+
+    /* Guardian with floating product cards. */
+    .stage { position: relative; max-width: 940px; height: 470px; margin: 44px auto 0; }
+    .guardian { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: min(380px, 70%); height: 100%; display: grid; place-items: end center; }
+    .guardian::before { content: ""; position: absolute; left: 50%; bottom: 6%; width: 86%; aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(circle, rgba(124, 92, 240, .28) 0%, rgba(124, 92, 240, 0) 68%); }
+    .guardian img, .guardian svg { position: relative; max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 24px 30px rgba(20, 18, 58, .22)); }
+    .guardian svg { width: 78%; }
+    .float { position: absolute; background: #fff; border-radius: 16px; padding: 12px 14px; box-shadow: 0 16px 40px rgba(20, 18, 58, .14); border: 1px solid rgba(20, 18, 58, .06); text-align: left; font-size: .9rem; line-height: 1.4; animation: bob 6s ease-in-out infinite; }
+    .float small { display: block; color: var(--soft); font-weight: 700; font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+    .f-transcript { left: 0; top: 30px; width: 260px; }
+    .f-transcript p { margin: 0; background: #fff1f1; border: 1px solid #ffd5d5; border-radius: 12px 12px 12px 4px; padding: 8px 10px; color: #3b1414; }
+    .f-scam { right: 0; top: 10px; background: linear-gradient(135deg, #e5383b, #b5172d); color: #fff; border: 0; animation-delay: -1.5s; }
+    .f-scam b { display: block; font-size: 1.15rem; }
+    .f-scam span { opacity: .9; font-weight: 600; }
+    .f-family { left: 6%; bottom: 46px; display: flex; align-items: center; gap: 10px; font-weight: 700; animation-delay: -3s; }
+    .f-family .ok { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #dcfce7; color: #15803d; font-weight: 800; }
+    .f-signals { right: 2%; bottom: 30px; width: 236px; animation-delay: -4.5s; }
+    .f-signals ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .f-signals li { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    .f-signals li::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #e5383b; box-shadow: 0 0 0 3px rgba(229, 56, 59, .18); }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    @media (prefers-reduced-motion: reduce) { .float { animation: none; } .rotator span { transition: none; } }
+    @media (max-width: 760px) {
+      .stage { height: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 32px; }
+      .guardian { position: relative; left: auto; transform: none; grid-column: 1 / -1; width: 100%; height: 260px; }
+      .float { position: relative; inset: auto; width: auto; animation: none; font-size: .85rem; }
+      .f-transcript, .f-signals { grid-column: 1 / -1; }
+      .f-signals ul { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* Problem vs solution. */
+    .section { padding: 72px 0; }
+    .eyebrow { color: var(--purple); font-weight: 800; font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; text-align: center; margin: 0; }
+    .home h2.t { font-size: clamp(1.7rem, 3.6vw, 2.6rem); letter-spacing: -.025em; line-height: 1.15; text-align: center; color: var(--ink); margin: 8px auto 36px; max-width: 22ch; }
+    .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .vs > div { border-radius: 24px; padding: 28px; }
+    .vs h3 { margin: 0 0 16px; font-size: 1.3rem; }
+    .vs ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+    .vs li { display: flex; gap: 12px; align-items: flex-start; font-size: 1.02rem; line-height: 1.45; }
+    .vs li b { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: .9rem; }
+    .bad { background: #fff3f3; border: 1px solid #ffd9d9; }
+    .bad h3 { color: #b4232c; }
+    .bad li b { background: #ffe0e0; color: #c62828; }
+    .good { background: #effcf4; border: 1px solid #c6f0d6; }
+    .good h3 { color: #157a43; }
+    .good li b { background: #d3f5e1; color: #157a43; }
+    @media (max-width: 760px) { .vs { grid-template-columns: 1fr; } .vs > div { padding: 22px; } }
+
+    /* How it works: dark band. */
+    .dark { background: radial-gradient(900px 400px at 85% 0%, rgba(124, 92, 240, .35), transparent 60%), linear-gradient(160deg, #0f0d2e 0%, #1d1650 60%, #2a1d6e 100%); color: #fff; }
+    .dark .eyebrow { color: #b9a8ff; }
+    .dark h2.t { color: #fff; }
+    .steps4 { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; counter-reset: s; }
+    .steps4 li { background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .12); border-radius: 20px; padding: 22px; }
+    .steps4 .ic { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: rgba(185, 168, 255, .16); font-size: 1.35rem; }
+    .steps4 .n { color: #b9a8ff; font-weight: 800; font-size: .85rem; letter-spacing: .06em; margin: 16px 0 4px; }
+    .steps4 h3 { margin: 0 0 6px; font-size: 1.12rem; }
+    .steps4 p { margin: 0; color: #cfcbe8; font-size: .97rem; line-height: 1.5; }
+    @media (max-width: 960px) { .steps4 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .steps4 { grid-template-columns: 1fr; } }
+
+    /* Stats strip. */
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+    .stat { background: #fff; border: 1px solid rgba(20, 18, 58, .08); border-radius: 20px; padding: 22px; box-shadow: 0 6px 20px rgba(20, 18, 58, .05); }
+    .stat b { display: block; font-size: clamp(1.8rem, 3.4vw, 2.4rem); letter-spacing: -.03em; background: linear-gradient(90deg, var(--ink), var(--purple)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .stat span { display: block; color: var(--ink-2); font-weight: 600; margin-top: 4px; }
+    .stat a, .stat small { display: block; color: var(--soft); font-size: .82rem; margin-top: 6px; }
+    @media (max-width: 860px) { .stats { grid-template-columns: 1fr 1fr; } }
+
+    .closing { text-align: center; padding-top: 8px; padding-bottom: 80px; }
+    .closing p { color: var(--ink-2); margin: 0 auto 22px; max-width: 34em; }
+    body.home footer.site { color: var(--soft); border-top: 1px solid rgba(20, 18, 58, .08); }
+    body.home footer.site a { color: var(--ink); }
   </style>
 </head>
-<body>
+<body class="home">
   <header class="site" id="site-header"></header>
 
-  <main class="wrap">
-    <section class="hero">
-      <div>
-        <h1 data-i18n="home.title">Stop phone scams before the money moves</h1>
-        <p class="lead" data-i18n="home.lead"></p>
-        <div class="cta">
-          <a class="btn primary big" href="/try?sample=scam-03-bank-fraud-department&amp;play=1">▶ <span data-i18n="home.ctaTry"></span></a>
-          <a class="btn" href="/try?sample="><span data-i18n="home.ctaOwn"></span></a>
-          <a class="btn" href="/dashboard"><span data-i18n="home.dashboardDemo"></span></a>
+  <main>
+    <div class="hero-bg">
+      <section class="hero container">
+        <span class="pill"><i></i>AI scam protection for every call</span>
+        <h1>The guardian that stops phone scams <span class="rotator" aria-live="polite"><span id="rot">before money moves</span></span></h1>
+        <p class="lead">Wessuwan listens to calls from unknown numbers, checks every sentence the caller says, and warns the person and their family the moment a scam starts.</p>
+        <div class="ctas">
+          <a class="b main" href="/try?sample=scam-03-bank-fraud-department&amp;play=1">▶ Try it live</a>
+          <a class="b ghost" href="#how">See how it works</a>
+        </div>
+
+        <div class="stage" aria-label="What Wessuwan shows during a scam call">
+          <div class="guardian" id="guardian">
+            <img id="guardian-img" src="/images/wessuwan-guardian.png" alt="Wessuwan, the guardian character" width="380" height="460" />
+          </div>
+          <div class="float f-transcript"><small>Live transcript</small><p><b>Caller:</b> Move your savings to a safe account…</p></div>
+          <div class="float f-scam"><b>⚠ Scam detected</b><span>Risk 95 / 100</span></div>
+          <div class="float f-family"><span class="ok">✓</span>Family alerted</div>
+          <div class="float f-signals"><small>Signals</small><ul><li>Urgency</li><li>Threat</li><li>Asks for codes</li><li>Asks for money</li></ul></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="section container">
+      <p class="eyebrow">The problem</p>
+      <h2 class="t">Scams happen on the call. That's where protection is missing.</h2>
+      <div class="vs">
+        <div class="bad">
+          <h3>Why people lose money</h3>
+          <ul>
+            <li><b>✕</b>Number blockers miss new numbers. Scammers change them every day.</li>
+            <li><b>✕</b>Once the call is answered, nothing protects the person.</li>
+            <li><b>✕</b>Scammers pressure and isolate: "act now", "don't hang up", "tell no one".</li>
+            <li><b>✕</b>Codes and bank transfers happen in minutes, before family can step in.</li>
+          </ul>
+        </div>
+        <div class="good">
+          <h3>How Wessuwan protects</h3>
+          <ul>
+            <li><b>✓</b>Checks every caller sentence the moment it ends.</li>
+            <li><b>✓</b>Warns the person inside the call, with a calm voice message.</li>
+            <li><b>✓</b>Warns instantly when a caller asks for a code.</li>
+            <li><b>✓</b>Alerts the family by SMS with a one-tap way to call.</li>
+            <li><b>✓</b>Deletes normal calls when they end. Audio is never stored.</li>
+          </ul>
         </div>
       </div>
-      <div class="card">
-        <h2 data-i18n="home.howTitle">How it works</h2>
-        <ol class="steps">
-          <li><b class="n">1</b><div data-i18n="home.how1"></div></li>
-          <li><b class="n">2</b><div data-i18n="home.how2"></div></li>
-          <li><b class="n">3</b><div data-i18n="home.how3"></div></li>
+    </section>
+
+    <section class="section dark" id="how">
+      <div class="container">
+        <p class="eyebrow">How it works</p>
+        <h2 class="t">Four steps, all during the call</h2>
+        <ol class="steps4">
+          <li><div class="ic" aria-hidden="true">📢</div><div class="n">STEP 1</div><h3>The caller hears a notice</h3><p>Calls from unknown numbers hear that the line is protected by AI before they're connected.</p></li>
+          <li><div class="ic" aria-hidden="true">🧠</div><div class="n">STEP 2</div><h3>Each sentence is checked by Jev</h3><p>Speech becomes text live, and Jev scores every caller sentence for urgency, threats and requests for codes or money.</p></li>
+          <li><div class="ic" aria-hidden="true">🔊</div><div class="n">STEP 3</div><h3>A warning plays in the call</h3><p>At high risk, the protected person hears a calm warning: don't send money, don't share codes, hang up.</p></li>
+          <li><div class="ic" aria-hidden="true">📱</div><div class="n">STEP 4</div><h3>The family gets an SMS</h3><p>Family members get a text saying who the caller claims to be, with a one-tap way to call.</p></li>
         </ol>
       </div>
     </section>
 
-    <h2 class="sec" data-i18n="home.samplesTitle">Pick a call and watch the risk rise</h2>
-    <div class="quick" id="quick"></div>
+    <section class="section container">
+      <p class="eyebrow">Why it matters</p>
+      <h2 class="t">The numbers behind every call</h2>
+      <div class="stats">
+        <div class="stat"><b>$442B</b><span>lost to scams worldwide in one year</span><a href="https://www.gasa.org/post/the-global-state-of-scams-trends-tactics-and-solutions" target="_blank" rel="noopener">GASA Global State of Scams 2025</a></div>
+        <div class="stat"><b>$7.75B</b><span>lost by Americans aged 60+ in 2025</span><a href="https://www.ic3.gov/AnnualReport/Reports/2025_IC3Report.pdf" target="_blank" rel="noopener">FBI IC3 2025 report</a></div>
+        <div class="stat"><b>16/16</b><span>test calls handled correctly</span><small>11 scams caught, 5 normal calls</small></div>
+        <div class="stat"><b>0</b><span>false alarms</span><small>on the normal test calls</small></div>
+      </div>
+    </section>
 
-    <div class="three">
-      <section class="card"><h2 data-i18n="home.problemTitle"></h2><p data-i18n="home.problem"></p></section>
-      <section class="card"><h2 data-i18n="home.privacyTitle"></h2><p data-i18n="home.privacy"></p><a href="/privacy" data-i18n="home.privacyLink"></a></section>
-    </div>
-
-    <h2 class="sec" data-i18n="home.aboutTitle">About the name</h2>
-    <p class="story" data-i18n="brand.story"></p>
-
-    <h2 class="sec" data-i18n="home.moreTitle">More</h2>
-    <div class="links">
-      <a class="btn" href="/dashboard">📺 <span data-i18n="home.dashboardDemo"></span></a>
-      <a class="btn" id="l-github" href="#" target="_blank" rel="noopener" data-i18n="nav.github">GitHub</a>
-      <a class="btn" id="l-deck" href="#" target="_blank" rel="noopener" data-i18n="nav.deck">Pitch deck</a>
-    </div>
+    <section class="closing container">
+      <h2 class="t">Hear it catch a scam in 30 seconds</h2>
+      <p>Pick a sample call and watch Wessuwan warn before the person can read out a code.</p>
+      <div class="hero"><div class="ctas" style="margin-top:0">
+        <a class="b main" href="/try">▶ Try it live</a>
+        <a class="b ghost" href="/dashboard">Open the Demo dashboard</a>
+      </div></div>
+    </section>
   </main>
 
   <footer class="site" id="site-footer"></footer>
@@ -83,31 +208,26 @@
   <script src="/i18n.js"></script>
   <script src="/site.js"></script>
   <script>
-    const PICKS = ['scam-03-bank-fraud-department', 'scam-01-fake-irs', 'scam-04-grandparent-emergency', 'scam-05-tech-support', 'normal-01-bank-card-check', 'normal-04-grandchild-chat'];
-    (async () => {
-      await i18n.ready;
-      const [cfg, samples] = await Promise.all([
-        fetch('/api/demo-config').then((r) => r.json()).catch(() => ({ links: {} })),
-        fetch('/api/samples').then((r) => r.json()).catch(() => []),
-      ]);
-      const quick = document.getElementById('quick');
-      for (const id of PICKS) {
-        const s = samples.find((x) => x.id === id);
-        if (!s) continue;
-        const a = document.createElement('a');
-        a.className = 'card';
-        a.href = `/try?sample=${encodeURIComponent(id)}&play=1`;
-        const first = (s.lines[0] || '').replace(/^\w+:\s*/, '');
-        a.innerHTML = `<span class="tag ${s.kind}"></span><h3></h3><p></p>`;
-        a.querySelector('.tag').textContent = t(s.kind === 'scam' ? 'home.scam' : 'home.normal');
-        a.querySelector('h3').textContent = s.title;
-        a.querySelector('p').textContent = first.length > 90 ? first.slice(0, 90) + '…' : first;
-        quick.appendChild(a);
-      }
-      for (const [id, url] of [['l-github', cfg.links?.github], ['l-deck', cfg.links?.pitchDeck]]) {
-        const el = document.getElementById(id);
-        if (url) el.href = url; else { el.setAttribute('data-missing', ''); el.title = t('nav.comingSoon'); }
-      }
+    // Guardian image, or a navy-and-gold shield until public/images/wessuwan-guardian.png is added.
+    (function () {
+      const img = document.getElementById('guardian-img');
+      const fallback = () => {
+        document.getElementById('guardian').innerHTML = '<svg viewBox="0 0 48 54" role="img" aria-label="Wessuwan shield"><defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1d77e"/><stop offset="1" stop-color="#b8901f"/></linearGradient></defs><path d="M24 2 L44 10 V25 C44 39 35 47 24 52 C13 47 4 39 4 25 V10 Z" fill="#0b1d3a" stroke="url(#hg)" stroke-width="2.5" stroke-linejoin="round"/><path d="M15 27 l6.5 6.5 L34 20" fill="none" stroke="url(#hg)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      };
+      img.addEventListener('error', fallback);
+      if (img.complete && !img.naturalWidth) fallback();
+    })();
+
+    // Rotating highlighted word in the headline.
+    (function () {
+      const words = ['before money moves', 'during the call', 'for your family'];
+      const el = document.getElementById('rot');
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      let i = 0;
+      setInterval(() => {
+        el.classList.add('out');
+        setTimeout(() => { i = (i + 1) % words.length; el.textContent = words[i]; el.classList.remove('out'); }, 350);
+      }, 2600);
     })();
   </script>
 </body>
