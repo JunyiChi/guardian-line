@@ -35,10 +35,10 @@
     .bubble { padding: 8px 12px; border-radius: 12px; margin: 0 0 8px; max-width: 92%; animation: pop .25s ease-out; }
     .bubble small { display: block; font-size: .8rem; color: var(--muted); font-weight: 700; }
     .bubble.caller { background: rgba(255, 77, 77, .1); border: 1px solid rgba(255, 77, 77, .3); }
-    .bubble.protected { background: rgba(212, 175, 55, .12); border: 1px solid rgba(212, 175, 55, .35); margin-left: auto; }
+    .bubble.protected { background: #f1edff; border: 1px solid rgba(91, 63, 214, .25); margin-left: auto; }
     .bubble.other { background: var(--navy-3); }
     .bubble .tl { display: block; margin-top: 4px; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-    .bubble .tl.warn { color: #ff8080; font-weight: 700; }
+    .bubble .tl.warn { color: #b91c1c; font-weight: 700; }
     @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
     .meter-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
@@ -51,17 +51,17 @@
     .badges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 18px 0; }
     .badge { border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; color: var(--muted); display: flex; align-items: center; gap: 8px; transition: all .3s; font-weight: 700; }
     .badge .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--muted); flex: none; }
-    .badge.on { color: #fff; background: rgba(255, 77, 77, .18); border-color: var(--red); }
+    .badge.on { color: #991b1b; background: #fff1f1; border-color: var(--red); }
     .badge.on .dot { background: var(--red); border-color: var(--red); box-shadow: 0 0 8px var(--red); }
     .badge .pct { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 800; opacity: .85; }
     .jev-tag { display: inline-block; margin-top: 10px; font-size: .75rem; font-weight: 800; color: var(--navy-0); background: var(--gold-soft); border-radius: 6px; padding: 1px 8px; }
     dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; }
     dl.facts dt { color: var(--muted); }
     dl.facts dd { margin: 0; font-weight: 700; }
-    .reason { margin: 14px 0 0; padding: 12px 14px; border-left: 4px solid var(--gold); background: rgba(212, 175, 55, .07); border-radius: 0 12px 12px 0; }
+    .reason { margin: 14px 0 0; padding: 12px 14px; border-left: 4px solid var(--gold); background: #f6f3ff; border-radius: 0 12px 12px 0; }
     .meta { color: var(--muted); font-size: .8rem; margin-top: 12px; }
     .empty { color: var(--muted); text-align: center; padding: 30px 10px; }
-    .notice { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--yellow); background: rgba(245, 197, 24, .1); white-space: pre-line; }
+    .notice { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--yellow); background: #fffbeb; white-space: pre-line; }
     .notice.on { display: block; }
 
     #alert { display: none; margin-top: 20px; }
@@ -71,13 +71,13 @@
     .alert-body { border: 1px solid var(--red); border-top: 0; border-radius: 0 0 var(--radius) var(--radius); padding: 18px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; background: var(--navy); }
     @media (max-width: 860px) { .alert-body { grid-template-columns: minmax(0, 1fr); } }
     .preview-tag { display: inline-block; font-size: .72rem; font-weight: 800; color: var(--navy-0); background: var(--gold-soft); border-radius: 6px; padding: 1px 8px; margin-bottom: 8px; }
-    .phone { background: #f2f2f7; border-radius: 22px; padding: 0 0 14px; overflow: hidden; color: #111; max-width: 380px; }
+    .phone { background: #f2f2f7; border: 1px solid #e2e2ea; border-radius: 22px; padding: 0 0 14px; overflow: hidden; color: #111; max-width: 380px; }
     .phone .bar-top { background: #e5e5ea; padding: 10px 14px; font-weight: 700; text-align: center; font-size: .9rem; }
     .phone .msg { background: #e5e5ea; border-radius: 18px 18px 18px 4px; margin: 14px 14px 0; padding: 10px 12px; font-size: .92rem; line-height: 1.45; }
     .phone .time { font-size: .68rem; color: #666; margin: 4px 16px 0; }
     .phone .call-btn { margin: 10px 14px 0; background: #34c759; color: #fff; border-radius: 12px; padding: 10px; text-align: center; font-weight: 700; }
     .voice p { margin: 0 0 12px; }
-    .voice blockquote { margin: 0 0 14px; padding: 10px 12px; background: var(--navy-0); border-radius: 12px; font-weight: 700; }
+    .voice blockquote { margin: 0 0 14px; padding: 10px 12px; background: var(--navy-3); border-radius: 12px; font-weight: 700; }
     .report { margin-top: 14px; color: var(--muted); font-size: .9rem; }
   </style>
 </head>

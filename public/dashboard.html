@@ -9,15 +9,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --navy-0: #06122a;
-      --navy: #0b1d3a;
-      --navy-2: #13294f;
-      --navy-3: #1c3766;
-      --line: rgba(212, 175, 55, .28);
-      --gold: #d4af37;
-      --gold-soft: #f1d77e;
-      --text: #f5f1e6;
-      --muted: #a9b4c9;
+      /* Dark navy-purple to match the homepage's "How it works" band; built for a big screen. */
+      --navy-0: #0f0d2e;
+      --navy: #17134a;
+      --navy-2: #211a5e;
+      --navy-3: #2a2170;
+      --line: rgba(185, 168, 255, .26);
+      --gold: #b9a8ff;
+      --gold-soft: #d9cfff;
+      --text: #f4f2ff;
+      --muted: #b3aed6;
       --green: #2ecc71;
       --yellow: #f5c518;
       --red: #ff4d4d;
@@ -28,7 +29,7 @@
     html, body { margin: 0; }
     body {
       font-family: "Inter", system-ui, -apple-system, "Segoe UI", "Hiragino Sans", sans-serif;
-      background: radial-gradient(1200px 600px at 80% -10%, #16305c 0%, transparent 60%), var(--navy-0);
+      background: radial-gradient(1100px 520px at 85% -10%, rgba(124, 92, 240, .35) 0%, transparent 60%), linear-gradient(160deg, #0f0d2e 0%, #1a1450 60%, #241a66 100%) fixed;
       color: var(--text);
       font-size: clamp(16px, 1.15vw, 22px);
       line-height: 1.5;
@@ -132,7 +133,7 @@
     .sig {
       display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center;
       padding: 10px 8px; border-radius: 12px; font-weight: 700; font-size: clamp(.95rem, 1.2vw, 1.3rem); line-height: 1.2;
-      border: 2px solid rgba(255,255,255,.14); color: rgba(245,241,230,.38); background: rgba(255,255,255,.03);
+      border: 2px solid rgba(255,255,255,.14); color: rgba(244,242,255,.45); background: rgba(255,255,255,.03);
       transition: background .4s, color .4s, border-color .4s, box-shadow .4s;
     }
     .sig .en { display: block; font-size: .6em; color: inherit; opacity: .8; }
@@ -156,7 +157,7 @@
     .msg.caller .bubble { background: var(--navy-3); border: 1px solid rgba(255, 255, 255, .12); border-top-left-radius: 4px; }
     .msg.protected { align-self: flex-end; align-items: flex-end; }
     .msg.protected .who { color: var(--gold-soft); }
-    .msg.protected .bubble { background: rgba(212, 175, 55, .18); border: 1px solid rgba(212, 175, 55, .5); border-top-right-radius: 4px; }
+    .msg.protected .bubble { background: rgba(185, 168, 255, .18); border: 1px solid rgba(185, 168, 255, .5); border-top-right-radius: 4px; }
     .msg.interim .bubble { opacity: .6; font-style: italic; }
     .msg.interim .bubble::after { content: " …"; }
 
