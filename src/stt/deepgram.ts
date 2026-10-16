@@ -66,7 +66,10 @@ export class DeepgramTrack {
       interim_results: 'true',
       punctuate: 'true',
       smart_format: 'true',
-      endpointing: '300',
+      // Sentence end after this much silence; UtteranceEnd backs it up when background noise keeps endpointing from firing.
+      endpointing: String(config.stt.endpointingMs),
+      utterance_end_ms: '1000',
+      vad_events: 'true',
     });
     const ws = new WebSocket(`${URL}?${params}`, { headers: { Authorization: `Token ${config.stt.deepgramApiKey}` } });
     this.ws = ws;
@@ -79,13 +82,14 @@ export class DeepgramTrack {
       if (isBinary) return;
       let msg: any;
       try { msg = JSON.parse(data.toString()); } catch { return; }
+      if (msg.type === 'UtteranceEnd') return void bus.emit('utterance-end', { callSid: this.callSid, speaker: this.speaker });
       if (msg.type !== 'Results') return;
       const alt = msg.channel?.alternatives?.[0];
       const text: string = alt?.transcript?.trim() ?? '';
       if (!text) return;
       const detected: string | undefined = alt.languages?.[0] ?? msg.metadata?.language ?? undefined;
       bus.emit('transcript-update', {
-        callSid: this.callSid, speaker: this.speaker, text, isFinal: !!msg.is_final,
+        callSid: this.callSid, speaker: this.speaker, text, isFinal: !!msg.is_final, endOfSpeech: !!msg.is_final && !!msg.speech_final,
         language: detected ?? (language() === 'multi' ? undefined : language()),
       });
     });

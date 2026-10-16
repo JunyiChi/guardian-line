@@ -42,7 +42,7 @@ If the server has no encryption key (`ENCRYPTION_KEY`), **no summaries are kept 
 |---|---|---|
 | **Twilio** | The call itself, phone numbers, SMS/WhatsApp alert text | Phone calls, call audio streaming, family alerts |
 | **Google Cloud Speech-to-Text** or **Deepgram** (one, chosen by the operator) | Call audio, live | Speech-to-text |
-| **Defapi** and **TypeSafe** (Jev decision model) | The transcript of the current call (most recent ~24 KB) and the country, every few seconds during the call | Scam detection |
+| **Defapi** and **TypeSafe** (Jev decision model) | The transcript of the current call (most recent ~24 KB) and the country, at the end of each caller sentence | Scam detection |
 | **Google Gemini API** or **Anthropic Claude API** (only if the operator enables the chat-model fallback) | The transcript of the last 2 minutes plus a one-line summary of earlier parts | Scam detection fallback |
 | **Google Cloud Text-to-Speech** (optional) | Only the fixed warning sentence, never call content | Generating the warning audio once |
 

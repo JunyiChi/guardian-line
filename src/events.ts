@@ -22,8 +22,13 @@ export interface BusEvents {
   'call:ended': { callSid: string };
   /** Raw mu-law 8kHz audio chunk from the Twilio media stream (memory only, never stored) */
   'call:audio': { callSid: string; speaker: Speaker; payload: Buffer };
-  /** Speech-to-text result; isFinal=false for interim results. language = BCP-47 code when the provider detects it. */
-  'transcript-update': { callSid: string; speaker: Speaker; text: string; isFinal: boolean; language?: string };
+  /**
+   * Speech-to-text result; isFinal=false for interim results. language = BCP-47 code when the provider detects it.
+   * endOfSpeech: this final result ends the speaker's sentence (Deepgram speech_final, Google final result).
+   */
+  'transcript-update': { callSid: string; speaker: Speaker; text: string; isFinal: boolean; endOfSpeech?: boolean; language?: string };
+  /** Deepgram UtteranceEnd: no words for utterance_end_ms, even if endpointing never fired (noisy line). */
+  'utterance-end': { callSid: string; speaker: Speaker };
   /**
    * After every detector check. score = the call's risk 0-100 (Jev: scam_likelihood/4*100; LLM: smoothed).
    * status is sticky: once a scam is detected it stays 'scam' for the rest of the call.

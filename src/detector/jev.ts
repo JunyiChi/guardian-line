@@ -214,6 +214,54 @@ export function decide(a: JevAnswer, prevScore: number | null, alreadyDetected: 
   };
 }
 
+/** What a scammer asks for: a one-time code, PIN or password. */
+const SECRET = String.raw`(?:(?:verification|security|confirmation|one[- ]time|access|six[- ]digit|6[- ]digit)\s+)?(?:code|passcode|pin|otp|password)s?`;
+const CODE_REQUEST = [
+  // "read it back to me", "read the code out"
+  new RegExp(String.raw`\bread (?:it|that|them|the (?:code|numbers?|digits)|${SECRET})\s+(?:back|out)\b`, 'i'),
+  // "tell me the code", "give me your PIN", "can you confirm the one-time passcode"
+  new RegExp(String.raw`\b(?:tell|give|read|share|say|confirm|provide|repeat)\b[^.?!]{0,25}\b${SECRET}\b`, 'i'),
+  // "what's the code we sent you", "what is your PIN"
+  new RegExp(String.raw`\bwhat(?:'s| is| was)\b[^.?!]{0,15}\b${SECRET}\b`, 'i'),
+];
+/** "We won't ask for any codes", "never share this code": reassurance, not a request. */
+const NEGATED = /\b(?:won't|will not|never|don't|do not|doesn't|does not|not|no one|nobody)\b[^.?!]{0,30}\b(?:ask|need|request|share|give|tell|read|say)\b/i;
+
+/**
+ * Keyword fast path: does this caller sentence ask for a code, PIN or password? Runs with zero
+ * delay on every caller sentence, before Jev answers, so the warning can't arrive after the code
+ * has been read out.
+ */
+export function codeRequest(sentence: string): boolean {
+  return sentence.split(/(?<=[.?!])\s+/).some((clause) => !NEGATED.test(clause) && CODE_REQUEST.some((re) => re.test(clause)));
+}
+
+/** The decision the fast path emits: a warning that names the code request. */
+export function codeRequestDecision(alreadyDetected: boolean): JevDecision {
+  const detected = new Set<JevSignal>(['asks_for_codes_or_data']);
+  const status: RiskStatus = 'scam';
+  return {
+    risk: 90, status, warn: !alreadyDetected, rule: 'code request (keyword)', detected,
+    signals: { urgency: false, threat: false, data_request: true, transfer_request: false },
+    impersonating: 'none',
+    reason: buildReason({ detected, scamType: 'other', impersonating: 'none', status }),
+  };
+}
+
+/**
+ * For checks of a whole transcript (Try it, test:detector): the fast path a live call would have run
+ * on each caller sentence. Turns a Jev decision into a warning if any caller line asks for a code.
+ */
+export function applyCodeRequest(d: JevDecision, lines: JevLine[], alreadyDetected: boolean): JevDecision {
+  if (d.warn || alreadyDetected || !lines.some((l) => l.speaker === 'caller' && codeRequest(l.text))) return d;
+  const fast = codeRequestDecision(false);
+  const detected = new Set([...d.detected, 'asks_for_codes_or_data' as JevSignal]);
+  return {
+    ...d, warn: true, status: 'scam', rule: fast.rule, risk: Math.max(d.risk, fast.risk), detected, signals: { ...d.signals, data_request: true },
+    reason: buildReason({ detected, scamType: 'other', impersonating: d.impersonating, status: 'scam' }),
+  };
+}
+
 const SHORT: Record<JevSignal, string> = {
   urgency: 'urgency', threat: 'threat', asks_for_codes_or_data: 'codes', asks_for_money: 'money',
   impersonating_authority: 'authority', asks_for_secrecy: 'secrecy',

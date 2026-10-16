@@ -111,7 +111,8 @@ export class TrackRecognizer {
     const isFinal = !!result.isFinal;
     if (isFinal) this.dropFinalized(durationMs(result.resultEndTime));
     bus.emit('transcript-update', {
-      callSid: this.callSid, speaker: this.speaker, text, isFinal, language: result.languageCode || undefined,
+      // Google closes a result at the end of each spoken phrase, so every final result ends a sentence.
+      callSid: this.callSid, speaker: this.speaker, text, isFinal, endOfSpeech: isFinal, language: result.languageCode || undefined,
     });
   }
 

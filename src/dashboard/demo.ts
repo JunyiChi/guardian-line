@@ -39,6 +39,7 @@ async function runDemo(): Promise<void> {
   await sleep(1200);
 
   let flagged = false;
+  let flaggedBefore = false;
   let announced = false;
   for (const [i, { speaker, text }] of lines.entries()) {
     // Interim results word by word, like live speech-to-text, then the final line.
@@ -47,8 +48,14 @@ async function runDemo(): Promise<void> {
       bus.emit('transcript-update', { callSid, speaker, text: words.slice(0, w).join(' '), isFinal: false });
       await sleep(450);
     }
-    bus.emit('transcript-update', { callSid, speaker, text, isFinal: true });
-    await sleep(900);
+    bus.emit('transcript-update', { callSid, speaker, text, isFinal: true, endOfSpeech: true });
+    // Like a live call: only the end of a caller sentence triggers a check; the reply comes after a short pause.
+    if (speaker !== 'caller') {
+      await sleep(1500);
+      continue;
+    }
+    const checkMs = 380 + ((i * 37) % 90);
+    await sleep(checkMs);
 
     const score = RISK[Math.min(i, RISK.length - 1)];
     const signals = SIGNALS[Math.min(i, SIGNALS.length - 1)];
@@ -66,13 +73,15 @@ async function runDemo(): Promise<void> {
     bus.emit('risk-update', {
       callSid, score, rawScore: score, scamType, reason, signals, impersonating, tier: 'jev', detector: 'jev',
       status: flagged ? 'scam' : score >= 40 ? 'watching' : 'safe', confidence: Math.min(0.97, 0.55 + score / 250),
-      probabilities, level: levelLabel(jevScore), ms: 380 + ((i * 37) % 90), cost: 0.00002,
+      probabilities, level: levelLabel(jevScore), ms: checkMs, cost: 0.00002,
     });
     if (score >= 70 && !announced) {
       announced = true;
       bus.emit('scam-detected', { callSid, score, scamType, reason, signals, impersonating, detector: 'jev' });
     }
-    await sleep(1500);
+    log.info('demo', `line ${i + 1}: caller sentence ended, checked in ${checkMs}ms, risk ${score}${score >= 70 && !flaggedBefore ? '  WARN' : ''}`);
+    flaggedBefore = flagged;
+    await sleep(lines[i + 1]?.speaker === 'protected' ? 900 : 1500);
   }
 
   await sleep(6000);

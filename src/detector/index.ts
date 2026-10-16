@@ -7,9 +7,8 @@ import { store } from '../store';
 import { log, shortSid } from '../privacy/log';
 import { complete, currentProvider, Tier } from './providers';
 import { AUTHORITIES, BASE_PROMPT, countryPrompt, IMPERSONATING, languageName, SCAM_TYPES } from './prompt';
-import { askJev, buildTranscript, decide, levelLabel, logCheck, statusOf } from './jev';
+import { askJev, buildTranscript, codeRequest, codeRequestDecision, decide, JevAnswer, JevDecision, levelLabel, logCheck, statusOf } from './jev';
 
-const SCORE_INTERVAL_MS = 8_000;
 /** Only the last 2 minutes of transcript are sent; earlier parts become a one-line summary. */
 const WINDOW_MS = 2 * 60 * 1000;
 const MIN_WINDOW_LINES = 4;
@@ -128,10 +127,17 @@ export class RiskTracker {
 /** Per-call detector state. Jev and the chat model share it, so a call can fall back mid-call. */
 interface CallState {
   mode: 'jev' | 'llm';
-  timer: NodeJS.Timeout;
+  /** One check at a time; a caller sentence that ends meanwhile sets pending, so it's checked right after. */
   inFlight: boolean;
+  pending: boolean;
   /** Final transcript lines already checked; a check is skipped until a new one arrives. */
   checkedLines: number;
+  /** Caller words heard since the last final result, and the long-speech backup timer. */
+  partial: string;
+  longSpeech: NodeJS.Timeout | null;
+  /** Caller final segments since the last sentence end (Deepgram can finalize a sentence in pieces). */
+  sentence: string[];
+  retry: NodeJS.Timeout | null;
   /** Once "scam-detected" fired, the call's status never goes back down. */
   detected: boolean;
   // ---- Jev
@@ -191,56 +197,75 @@ async function llmCheck(callSid: string, state: CallState): Promise<void> {
 }
 
 /** Jev check: one Decisions API request, decision rules, template reason. */
-async function jevCheck(callSid: string, state: CallState): Promise<void> {
+async function jevCheck(callSid: string, state: CallState, partial: string): Promise<void> {
   const rec = store.get(callSid);
-  if (!rec?.transcript.length) return;
-  const { text } = buildTranscript(rec.transcript);
+  if (!rec?.transcript.length && !partial) return;
+  // Long-speech backup: the caller's unfinished sentence goes in as the last line.
+  const lines = partial ? [...(rec?.transcript ?? []), { speaker: 'caller' as const, text: partial }] : rec!.transcript;
+  const { text } = buildTranscript(lines);
   const a = await askJev(text, getCountry(settings.get().country));
   if (calls.get(callSid) !== state) return;
   const d = decide(a, state.prevScore, state.detected);
   state.prevScore = a.score;
-  logCheck(a, d, shortSid(callSid));
+  logCheck(a, d, `${shortSid(callSid)}${partial ? ' (partial)' : ''}`);
+  emitJev(callSid, state, d, a);
+}
+
+/** risk-update for a Jev decision (or the keyword fast path, a = undefined), plus scam-detected on the first warning. */
+function emitJev(callSid: string, state: CallState, d: JevDecision, a?: JevAnswer): void {
   const firstWarning = d.warn && !state.detected;
   if (d.warn) state.detected = true;
   // After a warning the status stays red; keep the warning's explanation unless this check names signals too.
   if (firstWarning || (d.warn && d.detected.size)) state.warnReason = d.reason;
   else if (state.detected && state.warnReason) d.reason = state.warnReason;
   bus.emit('risk-update', {
-    callSid, score: d.risk, rawScore: d.risk, scamType: a.scamType, reason: d.reason, signals: d.signals,
+    callSid, score: d.risk, rawScore: d.risk, scamType: a?.scamType ?? 'other', reason: d.reason, signals: d.signals,
     impersonating: d.impersonating, tier: 'jev', detector: 'jev', status: d.status,
-    confidence: a.confidence, probabilities: a.probabilities, level: levelLabel(a.score), ms: a.ms, cost: a.cost,
+    ...(a && { confidence: a.confidence, probabilities: a.probabilities, level: levelLabel(a.score), ms: a.ms, cost: a.cost }),
   });
   if (firstWarning) {
     bus.emit('scam-detected', {
-      callSid, score: d.risk, scamType: a.scamType, reason: d.reason, signals: d.signals, impersonating: d.impersonating, detector: 'jev',
+      callSid, score: d.risk, scamType: a?.scamType ?? 'other', reason: d.reason, signals: d.signals, impersonating: d.impersonating, detector: 'jev',
     });
   }
 }
 
 const JEV_MAX_BACKOFF_MS = 15_000;
 
-async function tick(callSid: string, state: CallState): Promise<void> {
-  if (state.inFlight) return; // never overlap requests
+/**
+ * Runs a check now, or marks one pending if a check is already running: then exactly one more check
+ * runs with the latest transcript as soon as it finishes. Never overlaps, never skips the latest sentence.
+ */
+async function requestCheck(callSid: string, state: CallState, partial = ''): Promise<void> {
+  if (state.inFlight) {
+    if (!partial) state.pending = true;
+    return;
+  }
+  if (state.mode === 'jev' && Date.now() < state.backoffUntil) {
+    // Backing off after errors: check once the wait is over instead of dropping this sentence.
+    if (!state.retry) state.retry = setTimeout(() => { state.retry = null; void requestCheck(callSid, state); }, state.backoffUntil - Date.now());
+    return;
+  }
   const lines = store.get(callSid)?.transcript.length ?? 0;
-  if (lines === 0 || lines === state.checkedLines) return; // nothing new since the last check
-  if (state.mode === 'jev' && Date.now() < state.backoffUntil) return;
+  if (!partial && (lines === 0 || lines === state.checkedLines)) return; // nothing new since the last check
   state.inFlight = true;
-  const checked = lines;
+  state.pending = false;
   try {
     if (state.mode === 'jev') {
-      await jevCheck(callSid, state);
+      await jevCheck(callSid, state, partial);
       state.failures = 0;
     } else {
       await llmCheck(callSid, state);
     }
-    state.checkedLines = checked;
+    if (!partial) state.checkedLines = lines;
   } catch (err: any) {
-    // Never let scoring problems touch the call: log, back off, skip this check, retry later.
+    // Never let scoring problems touch the call: log, back off, then retry with the latest transcript.
     if (state.mode === 'jev') {
       state.failures++;
       const wait = Math.min(JEV_MAX_BACKOFF_MS, err?.retryAfterMs ?? 1000 * 2 ** (state.failures - 1));
       state.backoffUntil = Date.now() + wait;
-      log.error('jev', `${shortSid(callSid)}: check failed (${state.failures} in a row), skipped, retry in ${Math.round(wait / 1000)}s: ${err?.message ?? err}`);
+      if (!partial) state.pending = true;
+      log.error('jev', `${shortSid(callSid)}: check failed (${state.failures} in a row), retry in ${Math.round(wait / 1000)}s: ${err?.message ?? err}`);
       if (state.failures >= 3 && config.jev.fallback === 'llm') {
         state.mode = 'llm';
         log.warn('jev', `${shortSid(callSid)}: 3 failures in a row, switching this call to the chat-model detector (JEV_FALLBACK=llm)`);
@@ -251,36 +276,88 @@ async function tick(callSid: string, state: CallState): Promise<void> {
   } finally {
     state.inFlight = false;
   }
+  if (state.pending && calls.get(callSid) === state) void requestCheck(callSid, state);
+}
+
+/** A caller sentence ended: zero-delay keyword fast path, then a check on the latest transcript. */
+function sentenceEnded(callSid: string, state: CallState): void {
+  const sentence = state.sentence.join(' ');
+  state.sentence = [];
+  if (state.longSpeech) clearTimeout(state.longSpeech);
+  state.longSpeech = null;
+  state.partial = '';
+  if (sentence && !state.detected && codeRequest(sentence)) {
+    const d = codeRequestDecision(false);
+    log.info('jev', `${shortSid(callSid)} fast path: caller asks for a code  WARN (${d.rule})`);
+    emitJev(callSid, state, d);
+  }
+  void requestCheck(callSid, state);
+}
+
+function newState(mode: 'jev' | 'llm'): CallState {
+  return {
+    mode, inFlight: false, pending: false, checkedLines: 0, partial: '', longSpeech: null, sentence: [], retry: null, detected: false,
+    prevScore: null, warnReason: '', failures: 0, backoffUntil: 0,
+    tracker: new RiskTracker(), last: null,
+    signalsSoFar: { urgency: false, threat: false, data_request: false, transfer_request: false },
+  };
 }
 
 /**
- * Checks every active call's transcript and emits risk-update / scam-detected.
- * DETECTOR=jev (default): Jev every CHECK_INTERVAL_MS. DETECTOR=llm: the chat model every 8s.
+ * Checks each call when a caller sentence ends (speech-to-text end of utterance) and emits
+ * risk-update / scam-detected. Protected-person lines are part of the transcript but don't trigger
+ * a check. If the caller talks for LONG_SPEECH_CHECK_MS without a final result, the partial text is checked.
  */
 export function setupDetector(): void {
   const mode = config.detector === 'llm' ? 'llm' : 'jev';
   if (mode === 'jev' && !config.jev.apiKey) log.error('jev', 'JEV_API_KEY not set: scam detection will fail until it is');
-  log.info('detector', mode === 'jev'
-    ? `Jev ${config.jev.model} every ${config.jev.checkIntervalMs}ms (warn: score >= ${config.jev.warnScore} & conf >= ${config.jev.warnConfidence}, or >= ${config.jev.highScore} twice, or money/codes + authority; fallback ${config.jev.fallback})`
-    : `chat model ${currentProvider()} every ${SCORE_INTERVAL_MS}ms`);
+  log.info('detector', `${mode === 'jev'
+    ? `Jev ${config.jev.model} at the end of each caller sentence (warn: score >= ${config.jev.warnScore} & conf >= ${config.jev.warnConfidence}, or >= ${config.jev.highScore} twice, or money/codes + authority, or a code request; fallback ${config.jev.fallback})`
+    : `chat model ${currentProvider()} at the end of each caller sentence`}, long-speech check after ${config.jev.longSpeechCheckMs}ms`);
 
-  bus.on('transcript-update', ({ callSid, isFinal }) => {
-    if (!isFinal) return; // only final lines change the stored transcript
+  const stateOf = (callSid: string) => {
+    let s = calls.get(callSid);
+    if (!s) calls.set(callSid, (s = newState(mode)));
+    return s;
+  };
+
+  bus.on('transcript-update', ({ callSid, speaker, text, isFinal, endOfSpeech }) => {
     if (callSid.startsWith('DEMO-')) return; // demo replays carry their own scripted scores
-    if (calls.has(callSid)) return;
-    const s: CallState = {
-      mode, timer: undefined!, inFlight: false, checkedLines: 0, detected: false,
-      prevScore: null, warnReason: '', failures: 0, backoffUntil: 0,
-      tracker: new RiskTracker(), last: null,
-      signalsSoFar: { urgency: false, threat: false, data_request: false, transfer_request: false },
-    };
-    s.timer = setInterval(() => void tick(callSid, s), mode === 'jev' ? config.jev.checkIntervalMs : SCORE_INTERVAL_MS);
-    calls.set(callSid, s);
+    if (speaker !== 'caller') return; // protected-person lines are stored, but only caller sentences trigger checks
+    const s = stateOf(callSid);
+    if (!isFinal) {
+      s.partial = text;
+      // Backup for long speech: no final result for LONG_SPEECH_CHECK_MS, check what was said so far.
+      if (!s.longSpeech) {
+        let checked = '';
+        const fire = () => {
+          if (calls.get(callSid) !== s || !s.partial) { s.longSpeech = null; return; }
+          // Final segments of this sentence are already in the transcript; only the unfinished words are added.
+          if (s.partial !== checked) void requestCheck(callSid, s, (checked = s.partial));
+          s.longSpeech = setTimeout(fire, config.jev.longSpeechCheckMs);
+        };
+        s.longSpeech = setTimeout(fire, config.jev.longSpeechCheckMs);
+      }
+      return;
+    }
+    // A final result restarts the long-speech clock (it measures time without one).
+    s.partial = '';
+    if (s.longSpeech) clearTimeout(s.longSpeech);
+    s.longSpeech = null;
+    s.sentence.push(text);
+    if (endOfSpeech) sentenceEnded(callSid, s);
+  });
+
+  // Deepgram UtteranceEnd: the sentence ended even though endpointing never marked it (background noise).
+  bus.on('utterance-end', ({ callSid, speaker }) => {
+    const s = calls.get(callSid);
+    if (speaker === 'caller' && s?.sentence.length) sentenceEnded(callSid, s);
   });
 
   bus.on('call:ended', ({ callSid }) => {
     const state = calls.get(callSid);
-    if (state) clearInterval(state.timer);
+    if (state?.longSpeech) clearTimeout(state.longSpeech);
+    if (state?.retry) clearTimeout(state.retry);
     calls.delete(callSid);
   });
 }

@@ -5,7 +5,7 @@ import { config } from '../config';
 import { getCountry, listCountries } from '../config/countries';
 import { settings } from '../settings';
 import { scoreTranscript } from '../detector';
-import { askJev, buildTranscript, decide, levelLabel, logCheck } from '../detector/jev';
+import { applyCodeRequest, askJev, buildTranscript, decide, levelLabel, logCheck } from '../detector/jev';
 import { SCAM_TYPE_LABEL } from '../detector/prompt';
 import { currentModel, currentProvider } from '../detector/providers';
 import { smsText } from '../alerts';
@@ -144,7 +144,7 @@ export function setupTryIt(app: Express): void {
           return m ? { speaker: m[1].toLowerCase() as 'caller' | 'protected', text: m[2] } : { speaker: 'caller' as const, text: l };
         });
         const a = await askJev(buildTranscript(lines).text, country);
-        const d = decide(a, prev, req.body?.detected === true);
+        const d = applyCodeRequest(decide(a, prev, req.body?.detected === true), lines, req.body?.detected === true);
         logCheck(a, d, 'tryit');
         return res.json({
           detector: 'jev', tier: 'jev', risk: d.risk, status: d.status, warn: d.warn, rule: d.rule,

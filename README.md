@@ -30,7 +30,7 @@ flowchart LR
     A[📞 Unknown caller] -->|dials| T[Twilio number<br/>plays the consent announcement]
     T -->|rings over the normal<br/>phone network| P[👵 Protected person]
     T -->|live audio, 2 tracks| STT[Speech-to-text<br/>Google or Deepgram<br/>language auto-detect]
-    STT -->|transcript| AI[Jev decision model<br/>via Defapi, every 2.5s<br/>score + 6 signals + scam type]
+    STT -->|transcript| AI[Jev decision model<br/>via Defapi, at the end of<br/>each caller sentence<br/>score + 6 signals + scam type]
     AI -->|warning rule fires| W[🔊 Voice warning<br/>in the call's language]
     AI -->|warning rule fires| S[💬 SMS / WhatsApp<br/>to family]
     AI --> D[📺 Live dashboard]
@@ -39,7 +39,7 @@ flowchart LR
 
 1. **Call.** A caller dials the Wessuwan (Twilio) number. Trusted contacts ring straight through and are **never processed**. Everyone else first hears *"This call is protected by Wessuwan, an AI scam protection service."* No audio reaches the AI until that announcement has finished.
 2. **Listen.** Both sides of the call are streamed as separate tracks (8 kHz mu-law) to Google Speech-to-Text or Deepgram, with automatic language detection.
-3. **Judge.** Every 2.5 seconds (only when new speech arrived, never overlapping), **[Jev](https://defapi.org/model/typesafe/jev-1.13)**, TypeSafe's decision model, answers one typed request through Defapi. It returns a 0-4 `scam_likelihood` score with a confidence, the probability of six warning signals (urgency, threat, asks for codes or data, asks for money, claims to be an authority, asks for secrecy), and the scam type. Simple, auditable rules decide when to warn (see [The detector](#the-detector-jev) below). The warning's reason is built from templates, so nothing waits on a chat model. Country profiles add local context (IRS, HMRC, CRA, ATO, *ore ore sagi*, *Enkeltrick*…) and the right reporting hotline.
+3. **Judge.** At the end of each caller sentence, **[Jev](https://defapi.org/model/typesafe/jev-1.13)**, TypeSafe's decision model, answers one typed request through Defapi. It returns a 0-4 `scam_likelihood` score with a confidence, the probability of six warning signals (urgency, threat, asks for codes or data, asks for money, claims to be an authority, asks for secrecy), and the scam type. Simple, auditable rules decide when to warn (see [The detector](#the-detector-jev) below). The warning's reason is built from templates, so nothing waits on a chat model. Country profiles add local context (IRS, HMRC, CRA, ATO, *ore ore sagi*, *Enkeltrick*…) and the right reporting hotline.
 4. **Protect.** At high risk the protected person hears: *"Warning from Wessuwan: this call may be a scam. Do not send money or share any codes. Hang up and call your family."* (in the call's language when available). The family gets: *"Wessuwan ALERT: Mom may be on a scam call right now. Caller claims to be a government agency and is asking for gift cards. Risk 92/100. Call Mom now."* Optionally, the call is hung up automatically.
 
 ## The detector: Jev
@@ -62,9 +62,13 @@ Wessuwan asks [Jev](https://defapi.org/model/typesafe/jev-1.13) (`typesafe/jev-1
 
 Once the warning fires, the call stays red for the rest of the call. The reason comes from the detected signals and scam type, using templates in `locales/en.json`, e.g. *"Caller claims to be from your bank, asks you to move or send money, and says to keep it secret."*
 
-**Reliability.** Each request has a 3-second timeout. A failed, slow or rate-limited check is logged, backed off and skipped, and the call is never affected. Transcripts over `MAX_TRANSCRIPT_BYTES` (24 KB) keep their most recent lines, staying under Jev's ~32 KB long-context cutoff. With `JEV_FALLBACK=llm`, a call switches to the older chat-model detector (Gemini or Claude, `DETECTOR=llm`) after 3 Jev failures in a row.
+**When it checks.** A check runs when a caller sentence ends: Deepgram's end of speech (`speech_final` after `STT_ENDPOINTING_MS` of silence, default 600 ms, backed up by `UtteranceEnd`), or Google's final result. Protected-person lines go into the transcript but don't trigger a check on their own. Only one check runs at a time: if a caller sentence ends while one is running, exactly one more check runs with the latest transcript as soon as it finishes, so the latest sentence is never skipped. If the caller talks for `LONG_SPEECH_CHECK_MS` (4 s) without a final result, the partial text is checked.
 
-**Cost.** Jev bills input tokens only, and every response reports `usage.cost`. `npm run test:detector` prints the cost per check and per call for all 16 sample calls.
+**Code-request fast path.** Every caller sentence is also matched, with zero delay, against keyword patterns for code requests (*"read it back to me"*, *"tell me the verification code"*, *"what's your PIN"*, OTP, passcode…). A match warns at once (rule *code request (keyword)*) without waiting for Jev, so the warning lands before the person can read the code out. Reassurances like *"we won't ask for any codes"* and *"never share this code"* don't match.
+
+**Reliability.** Each request has a 3-second timeout. A failed, slow or rate-limited check is logged and backed off, then retried with the latest transcript, and the call is never affected. Transcripts over `MAX_TRANSCRIPT_BYTES` (24 KB) keep their most recent lines, staying under Jev's ~32 KB long-context cutoff. With `JEV_FALLBACK=llm`, a call switches to the older chat-model detector (Gemini or Claude, `DETECTOR=llm`) after 3 Jev failures in a row.
+
+**Cost.** Jev bills input tokens only, and every response reports `usage.cost`. `npm run test:detector` replays all 16 sample calls with a check at the end of each caller line and prints a timeline per call (when each check started and finished, and when the warning fired), plus the cost per check and per call.
 
 > ⚠️ **Check Defapi's and TypeSafe's data policy before using real users' calls.** The [Jev model page](https://defapi.org/model/typesafe/jev-1.13) and Defapi's terms say how prompts are logged, retained or used. Until you've confirmed a no-training, minimal-retention setup and a data processing agreement, use Jev only with test data such as the sample scripts and the public demo.
 

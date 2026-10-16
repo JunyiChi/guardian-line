@@ -49,6 +49,8 @@
     "check": "Check",
     "checking": "Checking…",
     "play": "Play it like a call",
+    "timeline": "checked {start} → {end} · risk {risk}",
+    "timelineWarn": "⚠ warning ({rule})",
     "stop": "Stop",
     "result": "Result",
     "empty": "Choose a sample and press \"Play it like a call\" to watch the risk rise in real time.",

@@ -30,6 +30,8 @@
     .bubble.caller { background: rgba(255, 77, 77, .1); border: 1px solid rgba(255, 77, 77, .3); }
     .bubble.protected { background: rgba(212, 175, 55, .12); border: 1px solid rgba(212, 175, 55, .35); margin-left: auto; }
     .bubble.other { background: var(--navy-3); }
+    .bubble .tl { display: block; margin-top: 4px; font-size: .72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .bubble .tl.warn { color: #ff8080; font-weight: 700; }
     @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
     .meter-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
@@ -167,8 +169,9 @@
   <script>
     const $ = (id) => document.getElementById(id);
     const SPEAKERS = { caller: 'caller', protected: 'protected', me: 'protected', grandma: 'protected', grandpa: 'protected', mom: 'protected', dad: 'protected' };
-    const LINES_PER_CHECK = 2;
+    // Like a live call: each caller sentence is checked when it ends; the protected person answers after a short pause.
     const LINE_DELAY_MS = 1400;
+    const REPLY_PAUSE_MS = 900;
     const SIGNALS6 = ['urgency', 'threat', 'asks_for_codes_or_data', 'asks_for_money', 'impersonating_authority', 'asks_for_secrecy'];
     /** Chat-model answers only have 4 booleans; map them onto the badges. */
     const LLM_MAP = { urgency: 'urgency', threat: 'threat', asks_for_codes_or_data: 'data_request', asks_for_money: 'transfer_request' };
@@ -266,7 +269,17 @@
       d.append(who, document.createTextNode(l.text));
       $('transcript').appendChild(d);
       $('transcript').scrollTop = $('transcript').scrollHeight;
+      return d;
     }
+    /** Timeline under a caller bubble: when its check started and finished, and whether it warned. */
+    function addTimeline(bubble, text, warn) {
+      const s = document.createElement('span');
+      s.className = 'tl' + (warn ? ' warn' : '');
+      s.textContent = text;
+      bubble.appendChild(s);
+      $('transcript').scrollTop = $('transcript').scrollHeight;
+    }
+    const secs = (ms) => (ms / 1000).toFixed(1) + 's';
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
     $('play').onclick = async () => {
@@ -275,18 +288,27 @@
       resetResult(); playing = true; setBusy(true);
       $('transcript').innerHTML = ''; $('transcript').classList.add('on');
       let prevScore = null, detected = false;
+      const t0 = performance.now();
       try {
         for (let i = 0; i < lines.length && playing; i++) {
-          addBubble(lines[i]);
+          const bubble = addBubble(lines[i]);
           const last = i === lines.length - 1;
-          if ((i + 1) % LINES_PER_CHECK === 0 || last) {
+          // Only caller sentences trigger a check, when the sentence ends (unlabeled lines count as the caller).
+          if (lines[i].speaker !== 'protected') {
+            const start = performance.now() - t0;
             // Same rules as a live call: the server sees the previous score ("twice in a row") and keeps the status sticky.
             const a = await check(lines.slice(0, i + 1).map((l) => l.raw).join('\n'), { prevScore, detected });
+            const end = performance.now() - t0;
             if (a.jevScore != null) prevScore = a.jevScore;
+            const first = a.warn && !detected;
             if (a.warn) detected = true;
-            if (playing) showResult(a, detected);
+            if (playing) {
+              showResult(a, detected);
+              addTimeline(bubble, t('try.timeline', { start: secs(start), end: secs(end), risk: a.risk }) + (first ? ' · ' + t('try.timelineWarn', { rule: a.rule || '' }) : ''), first);
+            }
           }
-          if (!last && playing) await sleep(LINE_DELAY_MS);
+          const next = lines[i + 1];
+          if (!last && playing) await sleep(next && next.speaker === 'protected' ? REPLY_PAUSE_MS : LINE_DELAY_MS);
         }
       } catch (e) { notice(e.message); }
       finally { playing = false; setBusy(false); }

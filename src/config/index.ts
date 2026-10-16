@@ -37,6 +37,8 @@ export const config = {
     language: process.env.STT_LANGUAGE || '',
     deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
     deepgramModel: process.env.DEEPGRAM_MODEL || 'nova-3',
+    /** Deepgram: silence (ms) that ends a sentence. ~500-700 starts checks quickly without splitting sentences much. */
+    endpointingMs: num(process.env.STT_ENDPOINTING_MS, 600),
   },
   google: {
     credentials: process.env.GOOGLE_APPLICATION_CREDENTIALS || '',
@@ -49,7 +51,8 @@ export const config = {
     url: process.env.JEV_URL || 'https://api.defapi.org/api/v1/decisions',
     /** Pinned so the thresholds below stay tuned to one model version. Never ~typesafe/jev-latest. */
     model: process.env.JEV_MODEL || 'typesafe/jev-1.13',
-    checkIntervalMs: num(process.env.CHECK_INTERVAL_MS, 2500),
+    /** Checks run when a caller sentence ends; while the caller keeps talking this long without one, the partial text is checked. */
+    longSpeechCheckMs: num(process.env.LONG_SPEECH_CHECK_MS, 4000),
     timeoutMs: num(process.env.JEV_TIMEOUT_MS, 3000),
     /** Warn when scam_likelihood >= this (0-4 scale) with confidence >= JEV_WARN_CONFIDENCE. */
     warnScore: num(process.env.JEV_WARN_SCORE, 3.5),
