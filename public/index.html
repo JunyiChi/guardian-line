@@ -13,8 +13,9 @@
     .hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; align-items: center; padding: 18px 0 28px; }
     @media (max-width: 860px) { .hero { grid-template-columns: minmax(0, 1fr); } }
     .hero h1 { font-size: clamp(2rem, 4.6vw, 3.2rem); margin: 0 0 14px; color: var(--gold); font-weight: 800; line-height: 1.1; }
-    .hero p.lead { margin: 0 0 12px; font-size: 1.12rem; }
-    .cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+    .hero p.lead { margin: 0 0 12px; font-size: clamp(1.1rem, 2vw, 1.3rem); max-width: 40em; }
+    .cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 22px; }
+    .cta .btn:not(.big) { font-size: .95rem; padding: 8px 16px; }
     .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
     .steps li { display: flex; gap: 12px; align-items: flex-start; }
     .steps b.n { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: var(--navy-0); }
@@ -28,7 +29,7 @@
     .tag.scam { background: rgba(255, 77, 77, .2); color: #ffb3b3; }
     .tag.normal { background: rgba(46, 204, 113, .18); color: #a5f0c5; }
     .quick h3 { margin: 8px 0 4px; font-size: 1.02rem; }
-    .quick p { margin: 0; color: var(--muted); font-size: .88rem; }
+    .quick p { margin: 0; color: var(--muted); font-size: .92rem; }
     .links { display: flex; gap: 12px; flex-wrap: wrap; }
     .links a[data-missing] { opacity: .5; pointer-events: none; }
     .story { color: var(--muted); font-style: italic; }
@@ -43,7 +44,7 @@
         <h1 data-i18n="home.title">Stop phone scams before the money moves</h1>
         <p class="lead" data-i18n="home.lead"></p>
         <div class="cta">
-          <a class="btn primary" href="/try?sample=scam-03-bank-fraud-department&amp;play=1">▶ <span data-i18n="home.ctaTry"></span></a>
+          <a class="btn primary big" href="/try?sample=scam-03-bank-fraud-department&amp;play=1">▶ <span data-i18n="home.ctaTry"></span></a>
           <a class="btn" href="/try?sample="><span data-i18n="home.ctaOwn"></span></a>
           <a class="btn" href="/dashboard"><span data-i18n="home.dashboardDemo"></span></a>
         </div>
