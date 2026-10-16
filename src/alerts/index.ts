@@ -70,7 +70,7 @@ async function familyAlert(callSid: string, score: number, scamType: string, imp
   const numbers = st.familyNumbers.length ? st.familyNumbers : isDemoCall(callSid) ? [DEMO_FAMILY] : [];
   if (!numbers.length) return log.warn('alerts', 'no FAMILY_PHONE_NUMBERS configured: family alert skipped');
   const text = smsText({ name: st.protectedName, score, scamType, impersonating, reason });
-  const results = await Promise.allSettled(numbers.map((n) => sendMessage(n, text, st.alertChannel)));
+  const results = await Promise.allSettled(numbers.map((n) => sendMessage(n, text, st.alertChannel, callSid)));
   results.forEach((r, i) => {
     if (r.status === 'rejected') log.error('alerts', `${shortSid(callSid)}: ${st.alertChannel} to ${maskNumber(numbers[i])} failed: ${r.reason?.message ?? r.reason}`);
   });

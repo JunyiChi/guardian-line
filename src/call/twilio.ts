@@ -49,9 +49,10 @@ export async function playWarning(callSid: string, audioUrl: string): Promise<vo
 
 /** Ends the call (both legs). */
 /** Sends one SMS or WhatsApp message. */
-export async function sendMessage(to: string, body: string, channel: 'sms' | 'whatsapp'): Promise<void> {
+/** Pass the call's callSid so alerts for DEMO-/TEST- calls are only logged, like the voice warning. */
+export async function sendMessage(to: string, body: string, channel: 'sms' | 'whatsapp', callSid?: string): Promise<void> {
   const from = channel === 'whatsapp' ? config.twilio.whatsappFrom : config.twilio.phoneNumber;
-  if (isMock() || !config.twilio.accountSid || !config.twilio.authToken || !from) {
+  if (isMock() || !config.twilio.accountSid || !config.twilio.authToken || !from || (callSid && /^(DEMO|TEST)-/.test(callSid))) {
     log.info('mock', `${channel} to ${maskNumber(to)} (not sent): ${body}`);
     return;
   }
