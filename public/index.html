@@ -49,6 +49,14 @@
     .guardian::before { content: ""; position: absolute; left: 50%; bottom: 6%; width: 86%; aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(circle, rgba(124, 92, 240, .28) 0%, rgba(124, 92, 240, 0) 68%); }
     .guardian img, .guardian svg { position: relative; max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 24px 30px rgba(20, 18, 58, .22)); }
     .guardian svg { width: 78%; }
+    /* The photo has its own lavender backdrop: fade its edges into the hero instead of showing a box. */
+    .guardian img {
+      position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); height: 100%; width: auto; max-width: none; filter: none;
+      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 22%, #000 78%, transparent 100%), linear-gradient(to bottom, transparent 0, #000 12%, #000 78%, transparent 100%);
+      -webkit-mask-composite: source-in;
+      mask-image: linear-gradient(to right, transparent 0, #000 22%, #000 78%, transparent 100%), linear-gradient(to bottom, transparent 0, #000 12%, #000 78%, transparent 100%);
+      mask-composite: intersect;
+    }
     .float { position: absolute; background: #fff; border-radius: 16px; padding: 12px 14px; box-shadow: 0 16px 40px rgba(20, 18, 58, .14); border: 1px solid rgba(20, 18, 58, .06); text-align: left; font-size: .9rem; line-height: 1.4; animation: bob 6s ease-in-out infinite; }
     .float small { display: block; color: var(--soft); font-weight: 700; font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
     .f-transcript { left: 0; top: 30px; width: 260px; }
@@ -133,7 +141,7 @@
 
         <div class="stage" aria-label="What Wessuwan shows during a scam call">
           <div class="guardian" id="guardian">
-            <img id="guardian-img" src="/images/wessuwan-guardian.png" alt="Wessuwan, the guardian character" width="380" height="460" />
+            <img id="guardian-img" src="/images/wessuwan-guardian.jpg" alt="Wessuwan, the guardian king, in black and gold armor" width="597" height="799" />
           </div>
           <div class="float f-transcript"><small>Live transcript</small><p><b>Caller:</b> Move your savings to a safe account…</p></div>
           <div class="float f-scam"><b>⚠ Scam detected</b><span>Risk 95 / 100</span></div>
@@ -208,7 +216,7 @@
   <script src="/i18n.js"></script>
   <script src="/site.js"></script>
   <script>
-    // Guardian image, or a navy-and-gold shield until public/images/wessuwan-guardian.png is added.
+    // Guardian image, or a navy-and-gold shield if public/images/wessuwan-guardian.jpg is missing.
     (function () {
       const img = document.getElementById('guardian-img');
       const fallback = () => {
