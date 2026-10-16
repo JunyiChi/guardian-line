@@ -19,7 +19,7 @@ Roles: **Presenter** (talks, drives the dashboard), **Scammer** (teammate who ca
 - [ ] **Twilio trial accounts:** the Scammer's, Protected person's and Family numbers are all verified caller IDs.
 - [ ] **Detector:** `npm run test:detector` shows PASS for all files and no false alarms.
 - [ ] **Full rehearsal:** one call with the normal script, then one with the scam script.
-- [ ] **Backup ready:** Demo mode tested once (section 4), and the public demo site open in a browser tab.
+- [ ] **Backup ready:** Demo mode tested once (section 4), and the public demo site (https://wessuwan-demo.onrender.com) open in a browser tab. Load it a few minutes early: the free server can take up to a minute to wake up.
 
 > ⚠️ **Known limitation:** with the current `<Dial>` setup, the voice warning is played by moving the protected person's leg away from the caller, so **the warning ends the scammer's connection**. Present this as "Wessuwan warns her and cuts the scammer off."
 
@@ -72,7 +72,7 @@ Signs: no `[call] announcement done` line in the terminal, the call doesn't conn
 1. Presenter says: *"The venue network isn't cooperating, so let's replay a real call we recorded."*
 2. Hang up the live call.
 3. Click **▶ Demo mode** on the dashboard. It replays the fake-bank call in about a minute: transcript, rising risk meter, signal badges, red banner, voice and SMS ticks, then the history entry.
-4. If even the laptop fails, open the **public demo site** on any phone, go to **Try it**, and press **Play it like a call** on "Fake bank fraud team". It shows the real AI scoring line by line, plus SMS and voice-warning previews.
+4. If even the laptop fails, open the **public demo site** (https://wessuwan-demo.onrender.com/try) on any phone, go to **Try it**, and press **Play it like a call** on "Fake bank fraud team". It shows the real AI scoring line by line, plus SMS and voice-warning previews.
 5. Without internet: set `MOCK=true` and run `curl -X POST http://localhost:3000/demo/start`.
 
 **If the server itself crashes,** run `npm run dev` again. It starts in a few seconds, and the dashboard reconnects on its own (the green dot top right).

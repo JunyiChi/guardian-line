@@ -2,24 +2,34 @@
 
 **An AI guardian that protects elderly people from phone scams, in real time, during the call.**
 
+### 🌐 Live demo: **[wessuwan-demo.onrender.com](https://wessuwan-demo.onrender.com)**
+
+[▶ Try it](https://wessuwan-demo.onrender.com/try) · [📺 Dashboard with Demo mode](https://wessuwan-demo.onrender.com/dashboard) · [🔒 Privacy](https://wessuwan-demo.onrender.com/privacy) · 📑 Pitch deck: (link coming soon)
+
+*Free hosting: the first visit can take up to a minute while the server wakes up.*
+
 Wessuwan listens to calls from unknown numbers as they happen. When the caller starts using scam tactics, such as "you'll be arrested today", "read me the code we just texted" or "buy gift cards", it plays a calm warning in the call and texts the family, **before any money moves**. The protected person needs no app and no smartphone: it works with any phone.
 
 > *Wessuwan is named after Thao Wessuwan, the guardian king in Thai and Buddhist tradition who protects people from evil and guards their treasure. Today the evil comes by phone, and Wessuwan protects people and their savings.*
 
-- 🌐 **Live demo:** [DEMO_SITE_URL](#) *(placeholder)*. Try the detector in your browser, no phone call needed.
-- 📑 **Pitch deck:** [PITCH_DECK_URL](#) *(placeholder)*
 - 🔒 [Privacy notice](PRIVACY.md) · [Security policy](SECURITY.md)
+
+## Try it in 30 seconds
+
+1. Open **[Try it](https://wessuwan-demo.onrender.com/try)** (allow up to a minute on the first visit while the free server wakes up).
+2. Pick a scam sample, for example **"Fake bank fraud team"**.
+3. Click **▶ Play it like a call**.
+4. Watch each caller sentence get checked as it ends, and the big red warning appear before the protected person replies.
+
+Or open the same call already playing: **[Fake bank fraud team, played like a call](https://wessuwan-demo.onrender.com/try?sample=scam-03-bank-fraud-department&play=1)**. For the full live-call view, open the **[dashboard](https://wessuwan-demo.onrender.com/dashboard)** and press **Demo mode**.
 
 ## The problem
 
 Scammers pretend to be the tax office, Social Security, the bank's fraud team, the police, tech support or a grandchild in trouble. They create fear and urgency, keep the victim on the line, and push for gift cards, crypto, wire transfers, a "safe account" or a verification code. Older adults lose the most, and they are often alone on the phone with no one to ask.
 
-*Fill in with current figures and sources:*
-
-- **[STAT]** reported losses to fraud by people aged 60+ in [COUNTRY/YEAR] ([source](#)).
-- **[STAT]** of scam contacts start with a phone call ([source](#)).
-- **[STAT]** median loss per elderly victim, versus **[STAT]** for younger adults ([source](#)).
-- **[STAT]** of elder fraud is never reported ([source](#)).
+- **$7.7 billion** in losses were reported to the FBI by Americans aged 60 and over in 2025, across 201,266 complaints. That's up 59% from 2024, with an average loss of **$38,500** per complaint. Tech and customer support scams alone took **$1.04 billion**. ([FBI IC3, 2025 Internet Crime Report](https://www.ic3.gov/AnnualReport/Reports/2025_IC3Report.pdf))
+- **Phone calls cost the most per victim.** Older adults report the highest median individual losses on frauds that started with a phone call. People aged 80 and over reported far higher losses, and far more loss reports, on phone scams than on any other contact method. ([FTC, *Protecting Older Consumers 2024–2025*](https://www.ftc.gov/system/files/ftc_gov/pdf/P144400-OlderAdultsReportDec2025.pdf))
+- **Most fraud is never reported.** Older adults reported nearly $2.4 billion in fraud losses to the FTC in 2024, but the FTC estimates the real cost to older adults that year was **$10.1 billion to $81.5 billion**. ([FTC, same report](https://www.ftc.gov/system/files/ftc_gov/pdf/P144400-OlderAdultsReportDec2025.pdf))
 
 Awareness campaigns help, but they don't reach the moment that matters: the call itself. Wessuwan steps in during the call.
 
@@ -115,7 +125,7 @@ Set `JEV_API_KEY` in `.env` (a Defapi key, from [defapi.org](https://defapi.org/
 PUBLIC_DEMO=true npm run dev
 ```
 
-Open http://localhost:3000 for the homepage, **Try it** (`/try`), the **dashboard** with Demo mode (`/dashboard`), and **setup** (`/setup`, read-only in demo mode).
+Open http://localhost:3000 (or the live demo at https://wessuwan-demo.onrender.com) for the homepage, **Try it** (`/try`), the **dashboard** with Demo mode (`/dashboard`), and **setup** (`/setup`, read-only in demo mode).
 
 ```bash
 npm run test:detector                       # replays all 16 sample calls through Jev line by line, prints a results table

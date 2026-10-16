@@ -22,7 +22,7 @@ This puts the **judge demo** online: the homepage, **Try it** (the real AI detec
    - `GITHUB_URL`: the repo URL (shown on the homepage and privacy page)
    - `PITCH_DECK_URL`: your deck link, or leave it empty
 4. Click **Apply**. The first build takes about 3 minutes (`npm ci && npm run build`). Render then checks `/health`.
-5. Open `https://wessuwan-demo.onrender.com` (Render shows the exact URL), then:
+5. Open the live URL, currently **https://wessuwan-demo.onrender.com** (Render shows the exact URL), then:
    - `/health` should return `{"ok":true,"publicDemo":true}`.
    - On **Try it**, pick "Fake bank fraud team" and press **Play it like a call**. Risk should pass 70, and the SMS and voice previews should appear.
    - On the **Dashboard**, press **Demo mode**. A full scam call replays in about a minute.
@@ -66,4 +66,4 @@ Don't use `PUBLIC_DEMO`. Set `NODE_ENV=production`, an HTTPS `PUBLIC_URL`, `SETU
 
 - [ ] `git status` shows no `.env`, no `*-key.json` and nothing under `data/` except `test-scripts/`.
 - [ ] No real phone numbers in test scripts, docs or `.env.example`.
-- [ ] `GITHUB_URL` and `PITCH_DECK_URL` are set on Render, and the README placeholders are filled in.
+- [ ] `GITHUB_URL` is set on Render (and `PITCH_DECK_URL` once the deck is ready), and the README's live demo links point to https://wessuwan-demo.onrender.com.
