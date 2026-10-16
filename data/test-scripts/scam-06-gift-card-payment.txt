@@ -1,0 +1,8 @@
+caller: Hi, this is Lisa from Pacific Power. Your account is three hundred and twelve dollars past due.
+protected: I thought I paid that last month.
+caller: Our system shows no payment. A disconnection crew is already scheduled for your address within the hour.
+protected: Please don't cut my power, I need it for my oxygen machine.
+caller: I can stop the crew, but you need to pay right now. Our payment system is down, so the only way is with Apple gift cards.
+protected: Apple gift cards? I've never paid my bill like that.
+caller: It's a temporary method while the system is down. Buy three hundred and fifty dollars in Apple gift cards at any store and call me back with the codes on the back.
+caller: Hurry, I can only hold the crew for forty-five minutes.

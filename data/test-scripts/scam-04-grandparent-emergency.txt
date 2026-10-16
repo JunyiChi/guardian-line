@@ -1,0 +1,10 @@
+caller: Grandma? It's me. I'm in big trouble.
+protected: Michael? Is that you? You sound different.
+caller: Yeah, I hurt my nose in the accident, that's why my voice sounds weird. I was in a car crash and the police arrested me.
+protected: Oh my God, are you okay? Where are you?
+protected: How do I know it is really you? I saw on the news that scammers can copy voices with AI now.
+caller: Grandma, it is really me, I promise. Remember the fishing trip last summer? Please, there is no time.
+caller: I'm at the police station. Please, Grandma, don't tell Mom and Dad, they'll be so angry. My lawyer is here, he'll explain.
+caller: Hello ma'am, this is attorney Steven Clark. Your grandson needs nine thousand dollars bail today or he stays in jail over the weekend.
+protected: Nine thousand? I don't know if I can do that.
+caller: I understand. You can withdraw cash and a courier will come to your house to collect it this afternoon. It's very important that this stays private, there's a gag order on the case.

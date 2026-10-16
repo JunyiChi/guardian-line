@@ -1,0 +1,57 @@
+{
+  "code": "SG",
+  "name": "Singapore",
+  "defaultLanguage": "en-SG",
+  "sttLanguages": [
+    "en-SG",
+    "cmn-Hans-CN",
+    "ms-MY"
+  ],
+  "privacyRegime": "PDPA (Singapore)",
+  "allPartyConsent": false,
+  "consentNote": "One-party consent applies; the PDPA requires notification of purpose, so Wessuwan always announces itself.",
+  "reporting": {
+    "name": "ScamShield Helpline",
+    "phone": "1799",
+    "url": "https://www.scamshield.gov.sg"
+  },
+  "localScams": [
+    {
+      "type": "government_impersonation",
+      "description": "Government official impersonation: MAS, MOH or police say you're involved in money laundering",
+      "phrases": [
+        "this is the Monetary Authority of Singapore",
+        "you are being investigated for money laundering"
+      ]
+    },
+    {
+      "type": "delivery_parcel",
+      "description": "Courier says a parcel in your name contains illegal items",
+      "phrases": [
+        "your parcel was found with illegal items"
+      ]
+    },
+    {
+      "type": "job_task",
+      "description": "Job scam: earn commission by completing online tasks after paying a deposit",
+      "phrases": [
+        "just complete tasks to earn commission"
+      ]
+    }
+  ],
+  "examplePhrases": {
+    "urgency": [
+      "immediately",
+      "within 2 hours"
+    ],
+    "threat": [
+      "you will be arrested"
+    ],
+    "data_request": [
+      "give me your Singpass OTP"
+    ],
+    "transfer_request": [
+      "transfer to the safety account"
+    ]
+  }
+}

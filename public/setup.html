@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wessuwan Setup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/site.css" />
+  <style>
+    main.wrap { max-width: 860px; }
+    .card { margin-bottom: 18px; }
+    label { display: block; font-weight: 700; margin: 12px 0 6px; }
+    input[type=text], input[type=tel], textarea, select {
+      width: 100%; font: inherit; color: var(--text); background: var(--navy-0);
+      border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+    }
+    textarea { min-height: 90px; resize: vertical; }
+    .hint { color: var(--muted); font-size: .85rem; margin: 4px 0 0; }
+    .row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    @media (max-width: 700px) { .row { grid-template-columns: minmax(0, 1fr); } }
+    .status { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-weight: 800; font-size: 1.15rem; }
+    .status .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--muted); flex: none; }
+    .status.on .dot { background: var(--green); box-shadow: 0 0 12px var(--green); }
+    .status.off .dot { background: var(--yellow); }
+    .consent { background: var(--navy-0); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; line-height: 1.6; }
+    .check { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; margin: 14px 0; }
+    .check input { width: 20px; height: 20px; margin-top: 3px; flex: none; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+    .msg { color: var(--green); font-weight: 700; }
+    .msg.err { color: var(--red); }
+    .demo-banner { border: 1px solid var(--gold); background: rgba(212, 175, 55, .1); border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; }
+    .danger { border-color: rgba(255, 77, 77, .5); }
+    .danger h2 { color: #ff9c9c; }
+    .btn.red { border-color: var(--red); color: #ffb3b3; }
+    .btn.red:hover:not(:disabled) { background: var(--red); color: #fff; }
+    ol.fw { padding-left: 20px; margin: 0; display: grid; gap: 8px; }
+    code { background: var(--navy-0); padding: 1px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <header class="site" id="site-header"></header>
+  <main class="wrap">
+    <h1 class="page-title" data-i18n="setup.title">Setup</h1>
+    <p data-i18n="setup.intro"></p>
+    <div class="demo-banner" id="demo" hidden data-i18n="setup.demoNotice"></div>
+
+    <section class="card">
+      <div class="status" id="status"><span class="dot"></span><span id="statusText"></span></div>
+      <div class="actions"><button class="btn" id="toggle"></button><span class="msg" id="toggleMsg"></span></div>
+      <p class="hint" id="kept"></p>
+    </section>
+
+    <section class="card">
+      <h2 data-i18n="setup.person">Protected person</h2>
+      <label for="name" data-i18n="setup.name"></label>
+      <input type="text" id="name" maxlength="60" autocomplete="off" />
+      <label for="number" data-i18n="setup.number"></label>
+      <input type="tel" id="number" placeholder="+1 555 010 0199" autocomplete="off" />
+    </section>
+
+    <section class="card">
+      <h2 data-i18n="setup.consentTitle">Consent</h2>
+      <div class="consent" id="consentText"></div>
+      <p class="hint" id="consentLaw"></p>
+      <div id="consentForm">
+        <label class="check"><input type="checkbox" id="agree" /><span data-i18n="setup.consentAgree"></span></label>
+        <label for="consentBy" data-i18n="setup.consentBy"></label>
+        <input type="text" id="consentBy" maxlength="80" autocomplete="name" />
+        <div class="actions"><button class="btn primary" id="saveConsent" data-i18n="setup.consentSave"></button><span class="msg" id="consentMsg"></span></div>
+      </div>
+      <p class="msg" id="consentDone" hidden></p>
+    </section>
+
+    <section class="card">
+      <label for="trusted" data-i18n="setup.trusted"></label>
+      <textarea id="trusted" placeholder="+1 555 010 0111"></textarea>
+      <p class="hint" data-i18n="setup.trustedHint"></p>
+      <label for="family" data-i18n="setup.family"></label>
+      <textarea id="family" placeholder="+1 555 010 0133"></textarea>
+      <p class="hint" data-i18n="setup.familyHint"></p>
+      <div class="row">
+        <div><label for="channel" data-i18n="setup.channel"></label>
+          <select id="channel"><option value="sms" data-i18n="setup.sms">SMS</option><option value="whatsapp" data-i18n="setup.whatsapp">WhatsApp</option></select></div>
+        <div><label for="country" data-i18n="setup.country"></label><select id="country"></select></div>
+        <div><label for="threshold" data-i18n="setup.threshold"></label>
+          <select id="threshold"><option>50</option><option>60</option><option>70</option><option>80</option><option>90</option></select></div>
+      </div>
+      <div class="row">
+        <div><label for="hangup" data-i18n="setup.hangup"></label>
+          <select id="hangup"><option value="off" data-i18n="setup.hangupOff">Off</option><option>80</option><option>90</option><option>95</option></select></div>
+      </div>
+      <p class="hint" id="hotline"></p>
+      <div class="actions">
+        <button class="btn primary" id="save" data-i18n="setup.save"></button>
+        <button class="btn" id="test" data-i18n="setup.testAlert"></button>
+        <span class="msg" id="saveMsg"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 data-i18n="setup.forwardTitle">Call forwarding</h2>
+      <ol class="fw">
+        <li id="fw1"></li>
+        <li id="fw2"></li>
+        <li id="fw3"></li>
+        <li data-i18n="setup.forward4"></li>
+      </ol>
+    </section>
+
+    <section class="card danger">
+      <h2 data-i18n="setup.dangerTitle">Delete all my data</h2>
+      <p data-i18n="setup.dangerText"></p>
+      <label for="confirm" data-i18n="setup.dangerConfirm"></label>
+      <input type="text" id="confirm" autocomplete="off" />
+      <div class="actions"><button class="btn red" id="delete" data-i18n="setup.dangerButton"></button><span class="msg" id="deleteMsg"></span></div>
+    </section>
+  </main>
+  <footer class="site" id="site-footer"></footer>
+
+  <script src="/i18n.js"></script>
+  <script src="/site.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let s = null;
+    const lines = (v) => v.split(/[\n,]/).map((x) => x.trim()).filter(Boolean);
+    function msg(id, text, err) { $(id).textContent = text || ''; $(id).classList.toggle('err', !!err); }
+
+    async function api(path, body) {
+      const res = await fetch(path, body === undefined ? {} : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+      return data;
+    }
+
+    function render(v) {
+      s = v;
+      $('demo').hidden = !v.demo;
+      const st = $('status');
+      st.className = 'status ' + (v.active ? 'on' : 'off');
+      $('statusText').textContent = t(v.active ? 'setup.statusOn' : v.consent ? 'setup.statusOff' : 'setup.statusNoConsent');
+      $('toggle').textContent = t(v.protectionEnabled ? 'setup.turnOff' : 'setup.turnOn');
+      $('kept').textContent = t('setup.summariesKept', { n: v.summariesKept, days: v.retentionDays });
+      $('name').value = v.protectedName;
+      $('number').value = v.protectedNumber;
+      $('consentText').textContent = t('setup.consentText', { days: v.retentionDays });
+      $('consentLaw').textContent = v.countryInfo.allPartyConsent ? t('setup.consentAllParty', { country: v.countryInfo.name }) + ' ' + v.countryInfo.consentNote : t('setup.consentOneParty') + ' ' + v.countryInfo.consentNote;
+      $('consentForm').hidden = !!v.consent;
+      $('consentDone').hidden = !v.consent;
+      if (v.consent) $('consentDone').textContent = t('setup.consentRecorded', { date: new Date(v.consent.acceptedAt).toLocaleString(), by: v.consent.acceptedBy });
+      $('trusted').value = v.trustedNumbers.join('\n');
+      $('family').value = v.familyNumbers.join('\n');
+      $('channel').value = v.alertChannel;
+      $('country').innerHTML = '';
+      for (const c of v.countries) $('country').appendChild(new Option(c.name, c.code, false, c.code === v.country));
+      $('threshold').value = String(v.riskThreshold);
+      $('hangup').value = v.autoHangupThreshold == null ? 'off' : String(v.autoHangupThreshold);
+      const r = v.countryInfo.reporting;
+      $('hotline').textContent = t('setup.hotline', { country: v.countryInfo.name, name: `${r.name}${r.phone ? ' · ' + r.phone : ''}${r.url ? ' · ' + r.url : ''}` });
+      const tw = v.twilioNumber || '(your Twilio number)';
+      $('fw1').textContent = t('setup.forward1', { twilio: tw });
+      $('fw2').textContent = t('setup.forward2', { twilio: tw });
+      $('fw3').textContent = t('setup.forward3', { twilio: tw });
+      for (const el of document.querySelectorAll('main input, main textarea, main select, main button')) {
+        if (v.demo && el.id !== 'test') el.disabled = true;
+      }
+    }
+
+    $('toggle').onclick = async () => {
+      try { render(await api('/api/protection', { enabled: !s.protectionEnabled })); msg('toggleMsg', ''); } catch (e) { msg('toggleMsg', e.message, true); }
+    };
+    $('saveConsent').onclick = async () => {
+      if (!$('agree').checked) return msg('consentMsg', t('setup.consentAgree'), true);
+      try { render(await api('/api/consent', { agree: true, name: $('consentBy').value })); } catch (e) { msg('consentMsg', e.message, true); }
+    };
+    $('save').onclick = async () => {
+      try {
+        render(await api('/api/settings', {
+          protectedName: $('name').value, protectedNumber: $('number').value,
+          trustedNumbers: lines($('trusted').value), familyNumbers: lines($('family').value),
+          alertChannel: $('channel').value, country: $('country').value,
+          riskThreshold: Number($('threshold').value), autoHangupThreshold: $('hangup').value === 'off' ? null : Number($('hangup').value),
+        }));
+        msg('saveMsg', t('setup.saved'));
+      } catch (e) { msg('saveMsg', e.message, true); }
+    };
+    $('test').onclick = async () => {
+      try {
+        const r = await api('/api/test-alert', {});
+        msg('saveMsg', r.mock ? t('setup.testMock', { text: r.preview }) : t('setup.testSent', { n: r.sent }), !r.ok);
+      } catch (e) { msg('saveMsg', e.message, true); }
+    };
+    $('delete').onclick = async () => {
+      try {
+        const r = await api('/api/delete-my-data', { confirm: $('confirm').value.trim() });
+        render(r.settings); msg('deleteMsg', t('setup.deleted'));
+      } catch (e) { msg('deleteMsg', e.message, true); }
+    };
+
+    i18n.ready.then(async () => {
+      try { render(await api('/api/settings')); } catch (e) { msg('toggleMsg', e.message, true); }
+    });
+  </script>
+</body>
+</html>

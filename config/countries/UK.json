@@ -1,0 +1,67 @@
+{
+  "code": "UK",
+  "name": "United Kingdom",
+  "defaultLanguage": "en-GB",
+  "sttLanguages": [
+    "en-GB"
+  ],
+  "privacyRegime": "UK GDPR",
+  "allPartyConsent": false,
+  "consentNote": "Parties may generally transcribe their own calls; UK GDPR still requires transparency, so Wessuwan always announces itself.",
+  "reporting": {
+    "name": "Action Fraud",
+    "phone": "0300 123 2040",
+    "url": "https://www.actionfraud.police.uk"
+  },
+  "localScams": [
+    {
+      "type": "bank_fraud_department",
+      "description": "Bank 'fraud team' says your account is compromised and you must move money to a safe account",
+      "phrases": [
+        "this is the fraud department at your bank",
+        "move your savings to a safe account"
+      ]
+    },
+    {
+      "type": "government_impersonation",
+      "description": "HMRC says you owe tax and face arrest",
+      "phrases": [
+        "this is HMRC",
+        "unpaid tax, a warrant will be issued"
+      ]
+    },
+    {
+      "type": "police_legal",
+      "description": "Courier fraud: fake police ask you to withdraw cash or buy gold and hand it to a courier",
+      "phrases": [
+        "we're investigating your bank",
+        "a courier will collect the cash"
+      ]
+    },
+    {
+      "type": "tech_support",
+      "description": "Broadband provider says your internet will be cut off and asks for remote access",
+      "phrases": [
+        "your broadband will be disconnected"
+      ]
+    }
+  ],
+  "examplePhrases": {
+    "urgency": [
+      "it has to be done today",
+      "don't hang up"
+    ],
+    "threat": [
+      "you'll be arrested",
+      "your account will be closed"
+    ],
+    "data_request": [
+      "read me the one-time passcode",
+      "what's your card PIN"
+    ],
+    "transfer_request": [
+      "transfer to a safe account",
+      "hand the cash to our courier"
+    ]
+  }
+}

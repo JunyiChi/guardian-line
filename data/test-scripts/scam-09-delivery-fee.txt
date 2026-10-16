@@ -1,0 +1,7 @@
+caller: Hello, this is FedEx delivery services. We attempted to deliver a package to you today but there is an unpaid customs fee.
+protected: A package? I'm not expecting anything.
+caller: It's a gift package from overseas. If the fee of four dollars ninety-nine is not paid today, the package will be returned.
+protected: Oh, I suppose that's not much.
+caller: I'll send a link to your phone now. Please click it and enter your card number, expiry date and the security code to pay the fee.
+protected: Okay, I see the text message.
+caller: After you enter the card, you'll receive a verification code from your bank. Please read that code to me so I can confirm the payment went through.

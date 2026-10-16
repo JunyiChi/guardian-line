@@ -1,0 +1,10 @@
+caller: Hello, this is James from the fraud department at Chase Bank. Am I speaking with Robert?
+protected: Yes, this is Robert.
+caller: Robert, we've detected two suspicious transactions on your account in the last hour, one for nine hundred and eighty dollars in Miami. Did you make these?
+protected: No, I'm at home. I didn't buy anything.
+caller: I thought so. Someone has access to your account right now and they are trying to withdraw your savings. We need to act immediately.
+protected: Oh no. What should I do?
+caller: I'm going to text you a verification code to confirm you're the account holder. Please read it back to me.
+protected: Okay, it says 4-8-2-9-1-6.
+caller: Thank you. Now, to protect your money, we need to move your balance to a secure safe account that the criminals can't touch. I'll give you the account number.
+caller: Please don't hang up and don't discuss this with branch staff, some employees may be involved in the fraud.

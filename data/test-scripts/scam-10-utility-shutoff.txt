@@ -1,0 +1,8 @@
+caller: Good morning, this is the disconnection department at City Gas and Electric.
+protected: Good morning. Is something wrong?
+caller: Your account shows a missed payment of five hundred and forty dollars. Your gas and electricity will be shut off in thirty minutes.
+protected: Thirty minutes? But it's freezing outside.
+caller: I understand, ma'am. To keep your service, you must pay the full amount immediately.
+protected: Can I pay online like I usually do?
+caller: No, the online system won't stop the technician in time. You need to pay by wire transfer or with prepaid cards right now. I'll stay on the line while you go to the store.
+caller: If you hang up, the shut-off will go ahead and there will be a two hundred dollar reconnection fee.

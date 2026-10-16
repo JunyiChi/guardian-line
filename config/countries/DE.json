@@ -1,0 +1,60 @@
+{
+  "code": "DE",
+  "name": "Germany",
+  "defaultLanguage": "de-DE",
+  "sttLanguages": [
+    "de-DE",
+    "en-US",
+    "tr-TR"
+  ],
+  "privacyRegime": "GDPR",
+  "allPartyConsent": true,
+  "consentNote": "Section 201 of the German Criminal Code protects the confidentiality of the spoken word; all parties must be informed. The announcement is mandatory.",
+  "reporting": {
+    "name": "Police (Polizei)",
+    "phone": "110",
+    "url": "https://www.polizei-beratung.de"
+  },
+  "localScams": [
+    {
+      "type": "grandparent_family_emergency",
+      "description": "Enkeltrick: a 'grandchild' needs money urgently, often 'I have a new number'",
+      "phrases": [
+        "Oma, rate mal, wer hier ist",
+        "ich habe eine neue Nummer"
+      ]
+    },
+    {
+      "type": "police_legal",
+      "description": "Falsche Polizeibeamte: fake police say burglars are nearby and offer to safeguard cash and jewellery",
+      "phrases": [
+        "hier ist die Kriminalpolizei",
+        "wir holen Ihr Bargeld zur Sicherheit ab"
+      ]
+    },
+    {
+      "type": "prize_lottery",
+      "description": "Gewinnspiel: you won, but must pay a fee first",
+      "phrases": [
+        "Sie haben gewonnen, aber zuerst eine Gebühr"
+      ]
+    }
+  ],
+  "examplePhrases": {
+    "urgency": [
+      "sofort",
+      "noch heute"
+    ],
+    "threat": [
+      "Sie werden verhaftet"
+    ],
+    "data_request": [
+      "nennen Sie mir die TAN",
+      "Ihre PIN bitte"
+    ],
+    "transfer_request": [
+      "überweisen Sie das Geld",
+      "wir holen das Bargeld ab"
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+caller: Hello, this is the automated fraud alert from First National Bank, now connecting you to an agent. Hi, this is Karen from First National's card services. Am I speaking with Mr. Thomas Reed?
+protected: Yes, speaking.
+caller: We noticed a purchase of sixty-two dollars at a garden center in Springfield this morning. Did you make that purchase?
+protected: Yes, that was me, I bought some plants.
+caller: Great, thank you for confirming. We won't ask for any codes or your PIN. There's nothing else you need to do, and your card stays active.
+protected: Thank you for checking.
+caller: You're welcome. If you ever have a question, call the number on the back of your card. Have a nice day.

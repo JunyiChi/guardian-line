@@ -1,0 +1,7 @@
+caller: This is Detective Mark Hayes with the county sheriff's office. Your bank account has been linked to a money laundering investigation.
+protected: Money laundering? I'm a retired schoolteacher.
+caller: We believe a bank employee stole your identity. The money in your account is not safe, and if it stays there it may be seized as evidence.
+protected: Seized? That's my retirement money.
+caller: To protect it, withdraw your savings in cash today. Then take it to the Bitcoin ATM at the gas station on Main Street. I'll send you a QR code to scan, and the money will go into a secure federal wallet.
+protected: I don't know how to use a Bitcoin machine.
+caller: I will guide you step by step. Stay on the line the whole time, and do not tell the bank why you're withdrawing the money. If they ask, say it's for home repairs.

@@ -1,0 +1,97 @@
+{
+  "code": "US",
+  "name": "United States",
+  "defaultLanguage": "en-US",
+  "sttLanguages": [
+    "en-US",
+    "es-US"
+  ],
+  "privacyRegime": "US",
+  "allPartyConsent": false,
+  "consentNote": "Federal law and most states allow one-party consent, but about a dozen states (e.g. California, Florida, Washington) require all-party consent. Wessuwan always announces itself.",
+  "reporting": {
+    "name": "DOJ National Elder Fraud Hotline",
+    "phone": "1-833-372-8311",
+    "url": "https://reportfraud.ftc.gov"
+  },
+  "localScams": [
+    {
+      "type": "government_impersonation",
+      "description": "IRS agent says you owe back taxes and will be arrested unless you pay today",
+      "phrases": [
+        "This is the IRS, there is a warrant for your arrest",
+        "you owe back taxes"
+      ]
+    },
+    {
+      "type": "government_impersonation",
+      "description": "Social Security Administration says your SSN is suspended or linked to a crime",
+      "phrases": [
+        "your Social Security number has been suspended",
+        "your benefits will be stopped"
+      ]
+    },
+    {
+      "type": "grandparent_family_emergency",
+      "description": "Grandchild in jail or a car accident needs bail money, sometimes with an AI-cloned voice, 'don't tell mom'",
+      "phrases": [
+        "Grandma, it's me, I'm in jail",
+        "please don't tell mom and dad"
+      ]
+    },
+    {
+      "type": "tech_support",
+      "description": "Microsoft/Apple support says the computer is infected and asks to install remote-access software",
+      "phrases": [
+        "your computer has a virus",
+        "download AnyDesk so I can fix it"
+      ]
+    },
+    {
+      "type": "gift_card_payment",
+      "description": "Pay a fine or fee with Target, Apple or Google Play gift cards and read out the numbers",
+      "phrases": [
+        "go to Walgreens and buy gift cards",
+        "scratch off the back and read me the numbers"
+      ]
+    },
+    {
+      "type": "crypto_atm_payment",
+      "description": "Withdraw cash and deposit it into a Bitcoin ATM to 'protect' it",
+      "phrases": [
+        "take the cash to a Bitcoin machine",
+        "scan this QR code at the ATM"
+      ]
+    },
+    {
+      "type": "utility_shutoff",
+      "description": "Power company threatens to cut electricity within the hour unless paid now",
+      "phrases": [
+        "your power will be shut off in 30 minutes"
+      ]
+    }
+  ],
+  "examplePhrases": {
+    "urgency": [
+      "you must do this today",
+      "stay on the line",
+      "in the next hour"
+    ],
+    "threat": [
+      "warrant for your arrest",
+      "your account will be frozen",
+      "you will be prosecuted"
+    ],
+    "data_request": [
+      "read me the code we just texted",
+      "confirm your Social Security number",
+      "download this app"
+    ],
+    "transfer_request": [
+      "buy gift cards",
+      "move your money to a safe account",
+      "deposit cash at a Bitcoin ATM",
+      "wire the money"
+    ]
+  }
+}

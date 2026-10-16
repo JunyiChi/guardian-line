@@ -1,0 +1,9 @@
+caller: Good afternoon, this is the Social Security Administration fraud prevention department.
+protected: Hello?
+caller: We are calling because your Social Security number was found at a crime scene in Texas linked to drug trafficking and money laundering.
+protected: That can't be right. I'm seventy-eight years old, I've never been to Texas.
+caller: That's why we're calling. Someone may have stolen your identity. Your number is now suspended and your benefits will be stopped this week.
+protected: Stopped? I live on that money.
+caller: To protect you, I need to verify your identity. Please confirm your full Social Security number and your date of birth.
+protected: Well, it starts with five two eight...
+caller: Good. And to secure your savings, we will move your bank balance into a new protected government account until the investigation is closed. What bank do you use?

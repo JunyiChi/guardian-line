@@ -1,0 +1,7 @@
+caller: Congratulations! This is Mr. Harold Green from the National Sweepstakes Bureau. You've won second prize in our annual draw, two and a half million dollars and a new Mercedes.
+protected: Oh my, really? I don't remember entering.
+caller: Your name was selected from shoppers nationwide. But to release the prize, federal law requires you to pay the taxes and processing fee first, two thousand nine hundred dollars.
+protected: I have to pay to get my prize?
+caller: Only the taxes. You can send it by wire transfer or Western Union today, and the delivery team will bring your check and car on Friday.
+protected: Can I ask my son to look at this first?
+caller: The prize must be claimed within twenty-four hours, and it's best to keep this confidential until it's delivered, for security reasons. Many winners are targeted by thieves.

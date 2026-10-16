@@ -1,0 +1,8 @@
+caller: Hello, I'm calling from Microsoft Windows technical support. Our servers show that your computer has been sending error messages and is infected with a dangerous virus.
+protected: Really? My computer has been slow lately.
+caller: Yes, hackers are using it right now to access your bank information. We must fix it immediately before they empty your accounts.
+protected: Oh dear. What do I do?
+caller: Please turn on your computer and go to anydesk dot com. Download the program and tell me the nine-digit number it shows.
+protected: Okay, it's downloading. The number is 482 991 307.
+caller: Perfect, I am now connected. I can see the hackers. To remove them, we need to log into your online banking so I can check for damage. Please type your password while I watch.
+caller: Stay on the phone with me, this will only take a few minutes.

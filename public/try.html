@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Try Wessuwan</title>
+  <meta name="description" content="Paste a phone conversation and see whether Wessuwan's AI detects a scam." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/site.css" />
+  <style>
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+    @media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+    .intro { margin: 0 0 18px; color: var(--muted); }
+    label.lbl { display: block; font-weight: 700; margin: 0 0 6px; }
+    select, textarea {
+      width: 100%; font: inherit; color: var(--text); background: var(--navy-0);
+      border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+    }
+    textarea { min-height: 240px; resize: vertical; line-height: 1.55; }
+    .row2 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+    .hint { color: var(--muted); font-size: .85rem; margin: 6px 0 14px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+    #transcript { display: none; margin-top: 16px; max-height: 360px; overflow-y: auto; padding-right: 4px; }
+    #transcript.on { display: block; }
+    .bubble { padding: 8px 12px; border-radius: 12px; margin: 0 0 8px; max-width: 92%; animation: pop .25s ease-out; }
+    .bubble small { display: block; font-size: .72rem; color: var(--muted); font-weight: 700; }
+    .bubble.caller { background: rgba(255, 77, 77, .1); border: 1px solid rgba(255, 77, 77, .3); }
+    .bubble.protected { background: rgba(212, 175, 55, .12); border: 1px solid rgba(212, 175, 55, .35); margin-left: auto; }
+    .bubble.other { background: var(--navy-3); }
+    @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .meter-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .score { font-size: 3.6rem; font-weight: 800; line-height: 1; color: var(--green); transition: color .3s; font-variant-numeric: tabular-nums; }
+    .score small { font-size: 1rem; color: var(--muted); font-weight: 500; }
+    .level { font-weight: 800; font-size: 1.15rem; }
+    .bar { height: 16px; border-radius: 999px; background: var(--navy-0); border: 1px solid var(--line); overflow: hidden; margin: 12px 0 4px; }
+    .bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--green); transition: width .6s ease, background .3s; }
+    .ticks { display: flex; justify-content: space-between; color: var(--muted); font-size: .72rem; }
+    .badges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 18px 0; }
+    .badge { border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; color: var(--muted); display: flex; align-items: center; gap: 8px; transition: all .3s; font-weight: 700; }
+    .badge .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--muted); flex: none; }
+    .badge.on { color: #fff; background: rgba(255, 77, 77, .18); border-color: var(--red); }
+    .badge.on .dot { background: var(--red); border-color: var(--red); box-shadow: 0 0 8px var(--red); }
+    .badge .pct { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 800; opacity: .85; }
+    .jev-tag { display: inline-block; margin-top: 10px; font-size: .75rem; font-weight: 800; color: var(--navy-0); background: var(--gold-soft); border-radius: 6px; padding: 1px 8px; }
+    dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; }
+    dl.facts dt { color: var(--muted); }
+    dl.facts dd { margin: 0; font-weight: 700; }
+    .reason { margin: 14px 0 0; padding: 12px 14px; border-left: 4px solid var(--gold); background: rgba(212, 175, 55, .07); border-radius: 0 12px 12px 0; }
+    .meta { color: var(--muted); font-size: .8rem; margin-top: 12px; }
+    .empty { color: var(--muted); text-align: center; padding: 30px 10px; }
+    .notice { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--yellow); background: rgba(245, 197, 24, .1); white-space: pre-line; }
+    .notice.on { display: block; }
+
+    #alert { display: none; margin-top: 20px; }
+    #alert.on { display: block; animation: pop .35s ease-out; }
+    .alert-head { background: linear-gradient(90deg, #8e1111, #c62828); color: #fff; border-radius: var(--radius) var(--radius) 0 0; padding: 12px 18px; font-weight: 800; }
+    .alert-body { border: 1px solid var(--red); border-top: 0; border-radius: 0 0 var(--radius) var(--radius); padding: 18px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; background: var(--navy); }
+    @media (max-width: 860px) { .alert-body { grid-template-columns: minmax(0, 1fr); } }
+    .preview-tag { display: inline-block; font-size: .72rem; font-weight: 800; color: var(--navy-0); background: var(--gold-soft); border-radius: 6px; padding: 1px 8px; margin-bottom: 8px; }
+    .phone { background: #f2f2f7; border-radius: 22px; padding: 0 0 14px; overflow: hidden; color: #111; max-width: 380px; }
+    .phone .bar-top { background: #e5e5ea; padding: 10px 14px; font-weight: 700; text-align: center; font-size: .9rem; }
+    .phone .msg { background: #e5e5ea; border-radius: 18px 18px 18px 4px; margin: 14px 14px 0; padding: 10px 12px; font-size: .92rem; line-height: 1.45; }
+    .phone .time { font-size: .68rem; color: #666; margin: 4px 16px 0; }
+    .phone .call-btn { margin: 10px 14px 0; background: #34c759; color: #fff; border-radius: 12px; padding: 10px; text-align: center; font-weight: 700; }
+    .voice p { margin: 0 0 12px; }
+    .voice blockquote { margin: 0 0 14px; padding: 10px 12px; background: var(--navy-0); border-radius: 12px; font-weight: 700; }
+    .report { margin-top: 14px; color: var(--muted); font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header class="site" id="site-header"></header>
+
+  <main class="wrap">
+    <h1 class="page-title" data-i18n="try.title">Try the scam detector</h1>
+    <p class="intro" data-i18n="try.intro"></p>
+
+    <div class="grid">
+      <section class="card" aria-labelledby="in-h">
+        <h2 id="in-h" data-i18n="try.conversation">Conversation</h2>
+        <div class="row2">
+          <div>
+            <label class="lbl" for="sample" data-i18n="try.sample">Sample call</label>
+            <select id="sample"><option value="" data-i18n="try.typeOwn">Type your own</option></select>
+          </div>
+          <div>
+            <label class="lbl" for="country" data-i18n="try.country">Country</label>
+            <select id="country"></select>
+          </div>
+        </div>
+        <p class="hint" id="kind"></p>
+        <label class="lbl" for="text" data-i18n="try.transcript">Transcript</label>
+        <textarea id="text" data-i18n-ph="try.placeholder"></textarea>
+        <p class="hint"><span data-i18n="try.hint"></span> · <span id="quota"></span></p>
+        <div class="actions">
+          <button class="btn" id="check">🔍 <span data-i18n="try.check">Check</span></button>
+          <button class="btn primary" id="play">▶ <span data-i18n="try.play">Play it like a call</span></button>
+          <button class="btn" id="stop" hidden>■ <span data-i18n="try.stop">Stop</span></button>
+        </div>
+        <div id="transcript" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="out-h" aria-live="polite">
+        <h2 id="out-h" data-i18n="try.result">Result</h2>
+        <div id="result-empty" class="empty" data-i18n="try.empty"></div>
+        <div id="result" hidden>
+          <div class="meter-top">
+            <div class="score" id="score">0<small>/100</small></div>
+            <div class="level" id="level"></div>
+          </div>
+          <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" data-i18n-title="risk.title"><i id="bar"></i></div>
+          <div class="ticks"><span>0</span><span>40</span><span id="th-tick"></span><span>100</span></div>
+          <div class="badges">
+            <div class="badge" id="sig-urgency"><span class="dot"></span><span data-i18n="signals.urgency"></span><span class="pct"></span></div>
+            <div class="badge" id="sig-threat"><span class="dot"></span><span data-i18n="signals.threat"></span><span class="pct"></span></div>
+            <div class="badge" id="sig-asks_for_codes_or_data"><span class="dot"></span><span data-i18n="signals.asks_for_codes_or_data"></span><span class="pct"></span></div>
+            <div class="badge" id="sig-asks_for_money"><span class="dot"></span><span data-i18n="signals.asks_for_money"></span><span class="pct"></span></div>
+            <div class="badge" id="sig-impersonating_authority"><span class="dot"></span><span data-i18n="signals.impersonating_authority"></span><span class="pct"></span></div>
+            <div class="badge" id="sig-asks_for_secrecy"><span class="dot"></span><span data-i18n="signals.asks_for_secrecy"></span><span class="pct"></span></div>
+          </div>
+          <dl class="facts">
+            <dt data-i18n="try.scamType"></dt><dd id="type">-</dd>
+            <dt data-i18n="try.impersonating"></dt><dd id="as">-</dd>
+            <dt data-i18n="try.level"></dt><dd id="lvl">-</dd>
+          </dl>
+          <p class="reason" id="reason"></p>
+          <div class="meta" id="meta"></div>
+          <span class="jev-tag" id="jevTag" hidden data-i18n="jev.detectedBy">Detected by Jev</span>
+        </div>
+        <div class="notice" id="notice" role="status"></div>
+      </section>
+    </div>
+
+    <section id="alert" aria-live="assertive">
+      <div class="alert-head">🚨 <span data-i18n="alert.heading"></span></div>
+      <div class="alert-body">
+        <div>
+          <span class="preview-tag" data-i18n="alert.preview"></span>
+          <h3 style="margin:0 0 10px">💬 <span data-i18n="alert.smsTitle"></span></h3>
+          <div class="phone" aria-label="SMS preview">
+            <div class="bar-top" data-i18n="alert.smsFrom">Wessuwan</div>
+            <div class="msg" id="sms-msg"></div>
+            <div class="time" id="sms-time"></div>
+            <div class="call-btn">📞 <span data-i18n="alert.callBtn"></span></div>
+          </div>
+        </div>
+        <div class="voice">
+          <span class="preview-tag" data-i18n="alert.preview"></span>
+          <h3 style="margin:0 0 10px">🔊 <span data-i18n="alert.voiceTitle"></span></h3>
+          <p data-i18n="alert.voiceLead"></p>
+          <blockquote id="warn-text"></blockquote>
+          <button class="btn primary" id="play-warning">▶ <span data-i18n="alert.playWarning"></span></button>
+          <audio id="warning-audio" preload="none"></audio>
+          <p class="report" id="report"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site" id="site-footer"></footer>
+
+  <script src="/i18n.js"></script>
+  <script src="/site.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const SPEAKERS = { caller: 'caller', protected: 'protected', me: 'protected', grandma: 'protected', grandpa: 'protected', mom: 'protected', dad: 'protected' };
+    const LINES_PER_CHECK = 2;
+    const LINE_DELAY_MS = 1400;
+    const SIGNALS6 = ['urgency', 'threat', 'asks_for_codes_or_data', 'asks_for_money', 'impersonating_authority', 'asks_for_secrecy'];
+    /** Chat-model answers only have 4 booleans; map them onto the badges. */
+    const LLM_MAP = { urgency: 'urgency', threat: 'threat', asks_for_codes_or_data: 'data_request', asks_for_money: 'transfer_request' };
+    let cfg = { riskThreshold: 70, warning: {}, scamTypes: {} };
+    let samples = [];
+    let playing = false;
+    let alerted = false;
+
+    /** "Me: ..." / "Caller: ..." -> the "protected: ..." / "caller: ..." format the detector expects. */
+    function normalize(line) {
+      const m = line.match(/^\s*([^:：]{1,20})\s*[:：]\s*(.*)$/);
+      const sp = m && SPEAKERS[m[1].trim().toLowerCase()];
+      return sp ? { speaker: sp, text: m[2], raw: `${sp}: ${m[2]}` } : { speaker: null, text: line.trim(), raw: line.trim() };
+    }
+    const linesOf = () => $('text').value.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map(normalize);
+    const statusOf = (a) => a.status || (a.risk >= 70 ? 'scam' : a.risk >= 40 ? 'watching' : 'safe');
+    const COLOR = { scam: 'var(--red)', watching: 'var(--yellow)', safe: 'var(--green)' };
+    const LEVEL = { scam: 'risk.danger', watching: 'risk.watching', safe: 'risk.safe' };
+    const labelOf = (s) => ({ caller: t('try.speakerCaller'), protected: t('try.speakerProtected') })[s] || t('try.speakerOther');
+
+    function setBusy(b) {
+      for (const id of ['check', 'sample', 'text', 'country']) $(id).disabled = b;
+      $('stop').hidden = !playing; $('play').hidden = playing; $('play').disabled = b && !playing;
+    }
+    function notice(msg) { $('notice').textContent = msg || ''; $('notice').classList.toggle('on', !!msg); }
+
+    function showResult(a, sticky) {
+      $('result-empty').hidden = true; $('result').hidden = false;
+      const st = sticky ? 'scam' : statusOf(a);
+      const c = COLOR[st];
+      $('score').firstChild.nodeValue = String(a.risk);
+      $('score').style.color = c;
+      $('level').textContent = t(LEVEL[st]); $('level').style.color = c;
+      $('bar').style.width = a.risk + '%'; $('bar').style.background = c;
+      document.querySelector('.bar').setAttribute('aria-valuenow', String(a.risk));
+      for (const k of SIGNALS6) {
+        const el = $('sig-' + k);
+        const p = a.probabilities ? a.probabilities[k] : null;
+        const on = p != null ? p >= 0.7 : !!(LLM_MAP[k] && a.signals[LLM_MAP[k]]);
+        el.classList.toggle('on', on);
+        el.querySelector('.pct').textContent = p != null ? `${Math.round(p * 100)}%` : '';
+      }
+      $('type').textContent = a.scamTypeLabel || a.scamType;
+      $('as').textContent = a.impersonating === 'none' ? '-' : a.impersonating.replace(/_/g, ' ');
+      $('lvl').textContent = a.level ? `${a.level} (${a.jevScore.toFixed(1)}/4)` : '-';
+      $('reason').textContent = a.reason;
+      $('meta').textContent = a.detector === 'jev'
+        ? t('try.metaJev', { conf: Math.round(a.confidence * 100), s: (a.ms / 1000).toFixed(1), cost: a.cost.toFixed(5) }) + (a.warn ? ` · ${a.rule}` : '')
+        : t('try.meta', { s: (a.ms / 1000).toFixed(1), tier: a.tier, raw: a.risk });
+      $('jevTag').hidden = a.detector !== 'jev';
+      if ((a.warn || sticky) && !alerted) showAlert(a);
+    }
+
+    function showAlert(a) {
+      alerted = true;
+      $('sms-msg').textContent = a.smsPreview;
+      $('sms-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      $('warn-text').textContent = a.warning.text;
+      $('warn-text').lang = a.warning.lang;
+      $('play-warning').dataset.audio = a.warning.audio || '';
+      $('play-warning').dataset.lang = a.warning.lang;
+      const r = a.reporting;
+      $('report').textContent = r ? t('alert.report', { name: r.name }) + (r.phone ? `, ${t('alert.reportPhone', { phone: r.phone })}` : '') + (r.url ? ` · ${r.url}` : '') : '';
+      $('alert').classList.add('on');
+      $('alert').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function resetResult() {
+      alerted = false; $('alert').classList.remove('on'); notice('');
+      $('result').hidden = true; $('result-empty').hidden = false;
+    }
+
+    async function check(transcript, prev) {
+      const res = await fetch('/api/check', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ transcript, country: $('country').value, ...(prev || {}) }) });
+      const data = await res.json().catch(() => ({ message: 'Something went wrong.' }));
+      if (typeof data.remaining === 'number') $('quota').textContent = t('try.quota', { n: data.remaining });
+      if (res.status === 429) $('quota').textContent = t('try.quotaDone');
+      if (!res.ok) throw new Error(data.message);
+      return data;
+    }
+
+    $('check').onclick = async () => {
+      const lines = linesOf();
+      if (!lines.length) return notice(t('try.needText'));
+      resetResult(); setBusy(true);
+      const label = $('check').querySelector('span'); label.textContent = t('try.checking');
+      try { const a = await check(lines.map((l) => l.raw).join('\n')); showResult(a, false); }
+      catch (e) { notice(e.message); }
+      finally { label.textContent = t('try.check'); setBusy(false); }
+    };
+
+    function addBubble(l) {
+      const d = document.createElement('div');
+      d.className = 'bubble ' + (l.speaker || 'other');
+      const who = document.createElement('small'); who.textContent = labelOf(l.speaker);
+      d.append(who, document.createTextNode(l.text));
+      $('transcript').appendChild(d);
+      $('transcript').scrollTop = $('transcript').scrollHeight;
+    }
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    $('play').onclick = async () => {
+      const lines = linesOf();
+      if (!lines.length) return notice(t('try.needText'));
+      resetResult(); playing = true; setBusy(true);
+      $('transcript').innerHTML = ''; $('transcript').classList.add('on');
+      let prevScore = null, detected = false;
+      try {
+        for (let i = 0; i < lines.length && playing; i++) {
+          addBubble(lines[i]);
+          const last = i === lines.length - 1;
+          if ((i + 1) % LINES_PER_CHECK === 0 || last) {
+            // Same rules as a live call: the server sees the previous score ("twice in a row") and keeps the status sticky.
+            const a = await check(lines.slice(0, i + 1).map((l) => l.raw).join('\n'), { prevScore, detected });
+            if (a.jevScore != null) prevScore = a.jevScore;
+            if (a.warn) detected = true;
+            if (playing) showResult(a, detected);
+          }
+          if (!last && playing) await sleep(LINE_DELAY_MS);
+        }
+      } catch (e) { notice(e.message); }
+      finally { playing = false; setBusy(false); }
+    };
+    $('stop').onclick = () => { playing = false; };
+
+    $('play-warning').onclick = () => {
+      const audio = $('warning-audio');
+      const src = $('play-warning').dataset.audio;
+      if (src) { audio.src = src; audio.currentTime = 0; audio.play().catch(speak); } else speak();
+    };
+    function speak() {
+      if (!('speechSynthesis' in window)) return;
+      const u = new SpeechSynthesisUtterance($('warn-text').textContent);
+      u.lang = $('play-warning').dataset.lang || 'en'; u.rate = 0.85;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    }
+
+    function loadSample(id) {
+      const s = samples.find((x) => x.id === id);
+      $('text').value = s ? s.lines.map((l) => { const n = normalize(l); return n.speaker ? `${n.speaker === 'caller' ? 'Caller' : 'Me'}: ${n.text}` : l; }).join('\n') : '';
+      $('kind').textContent = s ? (s.kind === 'scam' ? '🔴 ' + t('try.scamSample') : '🟢 ' + t('try.normalSample')) : '';
+      $('transcript').classList.remove('on'); resetResult();
+    }
+    $('sample').onchange = () => loadSample($('sample').value);
+
+    (async () => {
+      await i18n.ready;
+      try {
+        [cfg, samples] = await Promise.all([fetch('/api/demo-config').then((r) => r.json()), fetch('/api/samples').then((r) => r.json())]);
+      } catch { notice(t('try.loadFailed')); }
+      $('th-tick').textContent = t('risk.warnAt', { n: cfg.riskThreshold });
+      $('quota').textContent = t('try.quotaStart', { n: cfg.ratePerHour });
+      for (const c of cfg.countries || []) $('country').appendChild(new Option(c.name, c.code, false, c.code === cfg.country?.code));
+      for (const kind of ['scam', 'normal']) {
+        const g = document.createElement('optgroup'); g.label = t(kind === 'scam' ? 'try.scamCalls' : 'try.normalCalls');
+        for (const s of samples.filter((x) => x.kind === kind)) g.appendChild(new Option(s.title, s.id));
+        $('sample').appendChild(g);
+      }
+      const q = new URLSearchParams(location.search);
+      const want = q.has('sample') ? q.get('sample') : samples[0] && samples[0].id;
+      if (want && samples.some((s) => s.id === want)) { $('sample').value = want; loadSample(want); }
+      if (q.get('play') === '1' && $('text').value) $('play').click();
+    })();
+  </script>
+</body>
+</html>

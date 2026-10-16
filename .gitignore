@@ -1,0 +1,35 @@
+# Dependencies and build output
+node_modules/
+dist/
+
+# Secrets: never commit these
+.env
+.env.*
+!.env.example
+google-key.json
+*-key.json
+*credentials*.json
+service-account*.json
+*.pem
+*.key
+*.p12
+
+# Personal data: encrypted summaries, settings, any recordings
+data/*
+!data/.gitkeep
+!data/test-scripts/
+*.jsonl
+recordings/
+*.wav
+
+# Warning audio: only your own recorded warning*.mp3 files are published
+public/audio/*
+!public/audio/warning*.mp3
+
+# Logs and OS junk
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

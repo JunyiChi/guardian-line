@@ -1,0 +1,7 @@
+caller: Good evening, this is Paul calling from the Riverside Food Bank. We're a local charity, and I'm calling our past supporters to say thank you.
+protected: Oh, you're welcome. I gave a little at Christmas.
+caller: Your donation helped us serve over three hundred families. We're holding a community dinner next month, and we'd love for you to come as our guest.
+protected: That sounds lovely. When is it?
+caller: Saturday the fourteenth at the church hall. There's no cost, and no donation is needed. I'll mail you an invitation with the details.
+protected: Thank you, I'll try to come.
+caller: Wonderful. Have a lovely evening.

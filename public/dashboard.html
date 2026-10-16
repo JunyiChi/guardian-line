@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wessuwan Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy-0: #06122a;
+      --navy: #0b1d3a;
+      --navy-2: #13294f;
+      --navy-3: #1c3766;
+      --line: rgba(212, 175, 55, .28);
+      --gold: #d4af37;
+      --gold-soft: #f1d77e;
+      --text: #f5f1e6;
+      --muted: #a9b4c9;
+      --green: #2ecc71;
+      --yellow: #f5c518;
+      --red: #ff4d4d;
+      --red-deep: #8e1111;
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", "Hiragino Sans", sans-serif;
+      background: radial-gradient(1200px 600px at 80% -10%, #16305c 0%, transparent 60%), var(--navy-0);
+      color: var(--text);
+      font-size: clamp(16px, 1.15vw, 22px);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .en { display: block; font-size: .62em; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+    /* Header */
+    header {
+      display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+      padding: 18px clamp(16px, 3vw, 40px);
+      border-bottom: 2px solid var(--gold);
+      background: linear-gradient(180deg, var(--navy) 0%, var(--navy-0) 100%);
+    }
+    .brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
+    .brand svg { flex: none; width: clamp(44px, 3.6vw, 64px); height: auto; }
+    .brand h1 { margin: 0; font-size: clamp(1.4rem, 2.4vw, 2.6rem); font-weight: 800; color: var(--gold); line-height: 1.15; }
+    .brand h1 span { color: var(--gold-soft); font-weight: 700; }
+    .brand p { margin: 2px 0 0; color: var(--text); opacity: .85; font-size: clamp(.95rem, 1.2vw, 1.3rem); }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+    .navlink { color: var(--gold-soft); text-decoration: none; font-weight: 700; font-size: .9em; }
+    .navlink:hover { text-decoration: underline; }
+    .conn { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .85em; }
+    .conn i { width: 12px; height: 12px; border-radius: 50%; background: var(--red); }
+    .conn.on i { background: var(--green); box-shadow: 0 0 10px var(--green); }
+    button.demo {
+      font: inherit; font-weight: 700; cursor: pointer;
+      padding: 10px 22px; border-radius: 999px;
+      border: 2px solid var(--gold); background: transparent; color: var(--gold);
+      transition: background .2s, color .2s;
+    }
+    button.demo:hover:not(:disabled) { background: var(--gold); color: var(--navy-0); }
+    button.demo:disabled { opacity: .5; cursor: default; }
+    button.demo .en { display: inline; margin-left: 6px; color: inherit; opacity: .75; }
+
+    main { padding: clamp(16px, 2vw, 32px) clamp(16px, 3vw, 40px); display: grid; gap: clamp(16px, 1.6vw, 28px); }
+
+    /* Alert banner */
+    #alert {
+      display: none; position: relative; overflow: hidden;
+      border-radius: var(--radius); padding: clamp(18px, 2vw, 32px);
+      background: linear-gradient(135deg, #c41e1e 0%, var(--red-deep) 100%);
+      border: 3px solid #ffb3b3;
+      animation: alarm 1.4s ease-in-out infinite;
+    }
+    #alert.show { display: grid; grid-template-columns: auto 1fr auto; gap: clamp(16px, 2vw, 32px); align-items: center; }
+    @keyframes alarm { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, .7); } 50% { box-shadow: 0 0 0 14px rgba(255, 77, 77, 0); } }
+    #alert .icon { font-size: clamp(3rem, 5vw, 5.5rem); line-height: 1; }
+    #alert h2 { margin: 0; font-size: clamp(1.6rem, 3vw, 3.2rem); font-weight: 800; line-height: 1.15; }
+    #alert h2 .en { color: #ffd6d6; font-size: .4em; }
+    #alert .type { margin: 8px 0 4px; font-size: clamp(1.15rem, 1.8vw, 2rem); font-weight: 700; }
+    #alert .reason { margin: 0; font-size: clamp(1rem, 1.4vw, 1.5rem); opacity: .95; }
+    .checks { display: grid; gap: 10px; }
+    .check {
+      display: flex; align-items: center; gap: 10px; white-space: nowrap;
+      padding: 10px 18px; border-radius: 12px; font-weight: 700;
+      background: rgba(0, 0, 0, .25); border: 2px solid rgba(255, 255, 255, .25);
+      font-size: clamp(.95rem, 1.2vw, 1.3rem);
+    }
+    .check.done { background: #fff; color: #0f6b34; border-color: #fff; }
+    .check .spin { width: 16px; height: 16px; border-radius: 50%; border: 3px solid rgba(255,255,255,.35); border-top-color: #fff; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Live grid */
+    .live { display: grid; grid-template-columns: minmax(320px, 0.85fr) 1.4fr; gap: clamp(16px, 1.6vw, 28px); align-items: stretch; }
+    .card {
+      background: linear-gradient(180deg, var(--navy-2) 0%, var(--navy) 100%);
+      border: 1px solid var(--line); border-radius: var(--radius);
+      padding: clamp(16px, 1.6vw, 28px);
+      min-width: 0;
+    }
+    .card > h3 { margin: 0 0 14px; font-size: 1.1em; color: var(--gold); font-weight: 700; }
+    .left { display: grid; gap: clamp(16px, 1.6vw, 28px); grid-template-rows: auto 1fr; }
+
+    .status { display: flex; align-items: center; gap: 16px; }
+    .status .dot { flex: none; width: 22px; height: 22px; border-radius: 50%; background: #5d6b85; }
+    .status[data-s="ringing"] .dot { background: var(--yellow); animation: ring 0.9s ease-in-out infinite; }
+    .status[data-s="in-call"] .dot { background: var(--green); box-shadow: 0 0 14px var(--green); }
+    .status[data-s="ended"] .dot { background: var(--muted); }
+    @keyframes ring { 50% { transform: scale(1.35); opacity: .6; } }
+    .status .label { font-size: clamp(1.4rem, 2.2vw, 2.4rem); font-weight: 800; line-height: 1.15; }
+    .caller { margin-top: 14px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .caller .num { font-size: clamp(1.2rem, 1.9vw, 2rem); font-weight: 700; letter-spacing: .03em; font-variant-numeric: tabular-nums; }
+    .caller .timer { font-size: clamp(1.2rem, 1.9vw, 2rem); font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    /* Risk meter */
+    .meter { display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .meter svg { width: 100%; max-width: 440px; height: auto; overflow: visible; }
+    .meter .track { stroke: rgba(255,255,255,.1); }
+    .meter .arc { transition: stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1), stroke .5s; }
+    .meter .score { font-size: clamp(3.6rem, 7vw, 8rem); font-weight: 800; line-height: 1; margin-top: -0.95em; font-variant-numeric: tabular-nums; transition: color .5s; }
+    .meter .band { margin-top: 10px; font-size: clamp(1.2rem, 1.8vw, 2rem); font-weight: 800; transition: color .5s; }
+    .meter .band .en { display: inline; margin-left: 8px; }
+    .meter .why { margin-top: 8px; color: var(--muted); min-height: 3em; font-size: .95em; }
+    .scale { display: flex; gap: 6px; width: 100%; max-width: 440px; margin-top: 14px; font-size: .7em; color: var(--muted); }
+    .scale div { flex: 1; padding-top: 6px; border-top: 5px solid; }
+
+    /* The 4 official warning signals */
+    .stype { margin-top: 14px; font-size: clamp(1.05rem, 1.4vw, 1.5rem); font-weight: 700; min-height: 1.5em; color: var(--gold-soft); }
+    .signals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 440px; margin-top: 14px; }
+    .sig {
+      display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center;
+      padding: 10px 8px; border-radius: 12px; font-weight: 700; font-size: clamp(.95rem, 1.2vw, 1.3rem); line-height: 1.2;
+      border: 2px solid rgba(255,255,255,.14); color: rgba(245,241,230,.38); background: rgba(255,255,255,.03);
+      transition: background .4s, color .4s, border-color .4s, box-shadow .4s;
+    }
+    .sig .en { display: block; font-size: .6em; color: inherit; opacity: .8; }
+    .sig.on { background: var(--red); border-color: #ffb3b3; color: #fff; box-shadow: 0 0 18px rgba(255,77,77,.55); animation: lit .5s ease-out; }
+    @keyframes lit { from { transform: scale(1.12); } }
+
+    /* Transcript */
+    .transcript { display: flex; flex-direction: column; min-height: 0; }
+    #chat {
+      flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
+      min-height: 320px; max-height: 62vh; padding: 4px 4px 4px 0; scroll-behavior: smooth;
+    }
+    .empty { margin: auto; text-align: center; color: var(--muted); font-size: 1.15em; }
+    .msg { display: flex; flex-direction: column; max-width: 82%; animation: pop .25s ease-out; }
+    @keyframes pop { from { opacity: 0; transform: translateY(8px); } }
+    .msg .who { font-size: .8em; font-weight: 700; margin: 0 8px 4px; }
+    .msg .who .en { display: inline; margin-left: 6px; }
+    .msg .bubble { padding: 12px 18px; border-radius: 18px; font-size: clamp(1.1rem, 1.5vw, 1.6rem); line-height: 1.45; }
+    .msg.caller { align-self: flex-start; }
+    .msg.caller .who { color: #ff9c9c; }
+    .msg.caller .bubble { background: var(--navy-3); border: 1px solid rgba(255, 255, 255, .12); border-top-left-radius: 4px; }
+    .msg.protected { align-self: flex-end; align-items: flex-end; }
+    .msg.protected .who { color: var(--gold-soft); }
+    .msg.protected .bubble { background: rgba(212, 175, 55, .18); border: 1px solid rgba(212, 175, 55, .5); border-top-right-radius: 4px; }
+    .msg.interim .bubble { opacity: .6; font-style: italic; }
+    .msg.interim .bubble::after { content: " …"; }
+
+    /* History */
+    .history table { width: 100%; border-collapse: collapse; font-size: 1em; }
+    .history th { text-align: left; font-weight: 700; color: var(--gold); padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: bottom; }
+    .history td { padding: 14px; border-bottom: 1px solid rgba(255,255,255,.06); vertical-align: top; }
+    .history td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .pill { display: inline-block; min-width: 3.2em; text-align: center; padding: 3px 12px; border-radius: 999px; font-weight: 800; color: #0b1d3a; }
+    .row-normal td.sum { color: var(--muted); }
+    .row-scam td.sum { color: #ffd0d0; }
+    .history .none { color: var(--muted); padding: 18px 4px; }
+
+    /* Phone / narrow */
+    @media (max-width: 900px) {
+      .live { grid-template-columns: 1fr; }
+      #alert.show { grid-template-columns: auto 1fr; }
+      #alert .checks { grid-column: 1 / -1; }
+      .msg { max-width: 92%; }
+      #chat { max-height: 55vh; }
+      .history thead { display: none; }
+      .history tr { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+      .history td { padding: 0; border: 0; }
+      .history td.sum, .history td.type { grid-column: 1 / -1; }
+    }
+    @media (max-width: 560px) {
+      .header-right { margin-left: 0; width: 100%; justify-content: space-between; }
+      #alert.show { grid-template-columns: 1fr; }
+      #alert .icon { display: none; }
+      .check { white-space: normal; }
+    }
+    .hotline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; color: var(--muted); font-size: .95em; }
+    .hotline b { color: var(--gold-soft); }
+    .hotline a { color: var(--gold-soft); }
+    .sig .pct { display: block; font-size: .85em; font-variant-numeric: tabular-nums; }
+    .jevinfo { margin-top: 6px; color: var(--muted); font-size: .8em; min-height: 1.2em; }
+    .jevinfo b { color: var(--gold-soft); }
+    .tier { font-size: .55em; color: var(--muted); margin-left: 8px; font-weight: 500; }
+    select.lang { font: inherit; font-size: .8em; color: var(--text); background: var(--navy-0); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <!-- Guardian shield -->
+      <svg viewBox="0 0 48 54" aria-hidden="true">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1d77e"/><stop offset="1" stop-color="#b8901f"/></linearGradient></defs>
+        <path d="M24 2 L44 10 V25 C44 39 35 47 24 52 C13 47 4 39 4 25 V10 Z" fill="#0b1d3a" stroke="url(#g)" stroke-width="3.5" stroke-linejoin="round"/>
+        <path d="M24 9 L37 14.5 V25 C37 35 31 41 24 44.5 C17 41 11 35 11 25 V14.5 Z" fill="url(#g)" opacity=".18"/>
+        <path d="M15 27 l6.5 6.5 L34 20" fill="none" stroke="url(#g)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <h1>Wessuwan</h1>
+        <p data-i18n="brand.tagline">AI guardian against phone scams</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <a class="navlink" href="/" data-i18n="nav.home">Home</a>
+      <a class="navlink" href="/try" data-i18n="nav.try">Try it</a>
+      <a class="navlink" href="/setup" data-i18n="nav.setup">Setup</a>
+      <select class="lang" id="lang" aria-label="Language"></select>
+      <div class="conn" id="conn"><i></i><span data-i18n="dash.connecting">Connecting…</span></div>
+      <button class="demo" id="demo">▶ <span data-i18n="dash.demo">Demo mode</span></button>
+    </div>
+  </header>
+
+  <main>
+    <section id="alert" role="alert" aria-live="assertive">
+      <div class="icon">⚠️</div>
+      <div>
+        <h2 data-i18n="dash.scamDetected">Scam detected!</h2>
+        <p class="type" id="alertType"></p>
+        <p class="reason" id="alertReason"></p>
+      </div>
+      <div class="checks">
+        <div class="check" id="chkVoice"></div>
+        <div class="check" id="chkFamily"></div>
+      </div>
+    </section>
+
+    <div class="live">
+      <div class="left">
+        <section class="card">
+          <h3 data-i18n="dash.callStatus">Call status</h3>
+          <div class="status" id="status" data-s="idle">
+            <span class="dot"></span>
+            <div class="label" id="statusLabel"></div>
+          </div>
+          <div class="caller">
+            <div><span class="en" data-i18n="dash.caller">Caller</span><div class="num" id="callerNum">—</div></div>
+            <div style="text-align:right"><span class="en" data-i18n="dash.duration">Duration</span><div class="timer" id="timer">0:00</div></div>
+          </div>
+        </section>
+
+        <section class="card meter" aria-label="Risk meter">
+          <h3 style="align-self:flex-start" data-i18n="risk.title">Scam risk</h3>
+          <svg viewBox="0 0 220 124">
+            <path class="track" d="M20 112 A90 90 0 0 1 200 112" fill="none" stroke-width="20" stroke-linecap="round"/>
+            <path class="arc" id="arc" d="M20 112 A90 90 0 0 1 200 112" fill="none" stroke-width="20" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/>
+          </svg>
+          <div class="score" id="score">0</div>
+          <div class="band" id="band"></div>
+          <div class="stype" id="stype"></div>
+          <div class="signals" aria-label="Warning signals">
+            <div class="sig" id="sig-urgency"><span>⏰</span><div><span data-i18n="signals.urgency">Urgency</span><b class="pct"></b></div></div>
+            <div class="sig" id="sig-threat"><span>⚡</span><div><span data-i18n="signals.threat">Threat</span><b class="pct"></b></div></div>
+            <div class="sig" id="sig-asks_for_codes_or_data"><span>🔑</span><div><span data-i18n="signals.asks_for_codes_or_data">Asks for codes/data</span><b class="pct"></b></div></div>
+            <div class="sig" id="sig-asks_for_money"><span>💸</span><div><span data-i18n="signals.asks_for_money">Asks for money</span><b class="pct"></b></div></div>
+            <div class="sig" id="sig-impersonating_authority"><span>🏛️</span><div><span data-i18n="signals.impersonating_authority">Claims authority</span><b class="pct"></b></div></div>
+            <div class="sig" id="sig-asks_for_secrecy"><span>🤫</span><div><span data-i18n="signals.asks_for_secrecy">Asks for secrecy</span><b class="pct"></b></div></div>
+          </div>
+          <div class="why" id="why"></div>
+          <div class="jevinfo" id="jevinfo"></div>
+          <div class="scale">
+            <div style="border-color:var(--green)">0–39 <span data-i18n="risk.safe"></span></div>
+            <div style="border-color:var(--yellow)">40–69 <span data-i18n="risk.suspicious"></span></div>
+            <div style="border-color:var(--red)" id="scaleRed">70+ <span data-i18n="risk.danger"></span></div>
+          </div>
+        </section>
+      </div>
+
+      <section class="card transcript">
+        <h3 data-i18n="dash.transcript">Live transcript</h3>
+        <div id="chat"><div class="empty" data-i18n="dash.waiting">Waiting for a call</div></div>
+      </section>
+    </div>
+
+    <section class="card">
+      <h3 data-i18n="dash.reportTitle">Report a scam</h3>
+      <div class="hotline" id="hotline">—</div>
+    </section>
+
+    <section class="card history">
+      <h3 data-i18n="dash.history">Call history</h3>
+      <table>
+        <thead><tr>
+          <th data-i18n="dash.time">Time</th>
+          <th data-i18n="dash.caller">Caller</th>
+          <th data-i18n="dash.maxRisk">Max risk</th>
+          <th data-i18n="dash.type">Type</th>
+          <th data-i18n="dash.summary">Summary</th>
+        </tr></thead>
+        <tbody id="history"></tbody>
+      </table>
+      <div class="none" id="historyNone" data-i18n="dash.noCalls">No calls yet</div>
+    </section>
+  </main>
+
+  <script src="/i18n.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let SCAM_TYPE = { none: 'None detected' };
+    let THRESHOLD = 70;
+    const typeLabel = (k) => SCAM_TYPE[k] ?? k;
+    const SIGNALS = ['urgency', 'threat', 'asks_for_codes_or_data', 'asks_for_money', 'impersonating_authority', 'asks_for_secrecy'];
+    /** Chat-model updates only carry 4 booleans. */
+    const LLM_MAP = { urgency: 'urgency', threat: 'threat', asks_for_codes_or_data: 'data_request', asks_for_money: 'transfer_request' };
+    const STATUS_COLOR = { scam: ['var(--red)', 'risk.danger'], watching: ['var(--yellow)', 'risk.watching'], safe: ['var(--green)', 'risk.safe'] };
+    const STATUS = { idle: 'dash.idle', ringing: 'dash.ringing', 'in-call': 'dash.inCall', ended: 'dash.ended' };
+    const WHO = { caller: 'dash.caller', protected: 'dash.protected' };
+
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const band = (r) => r >= THRESHOLD ? ['var(--red)', 'risk.danger'] : r >= 40 ? ['var(--yellow)', 'risk.suspicious'] : ['var(--green)', 'risk.safe'];
+
+    let current = null;
+    let timerStart = 0;
+    let shownScore = 0;
+
+    function setStatus(s) {
+      $('status').dataset.s = s;
+      $('statusLabel').textContent = t(STATUS[s]);
+      if (s === 'in-call' && !timerStart) timerStart = Date.now();
+      if (s !== 'in-call') timerStart = s === 'ended' ? timerStart : 0;
+    }
+    setInterval(() => {
+      if ($('status').dataset.s !== 'in-call' || !timerStart) return;
+      const s = Math.floor((Date.now() - timerStart) / 1000);
+      $('timer').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    }, 500);
+
+    function setRisk(score, reason, tier, status) {
+      const [color, key] = status ? STATUS_COLOR[status] : band(score);
+      $('arc').style.strokeDashoffset = 100 - score;
+      $('arc').style.stroke = color;
+      $('arc').style.opacity = score > 0 ? 1 : 0;
+      $('score').style.color = color;
+      $('band').style.color = color;
+      $('band').innerHTML = `${esc(t(key))}${tier && tier !== 'jev' ? `<span class="tier">${esc(tier)} model</span>` : ''}`;
+      $('why').textContent = reason || '';
+      const from = shownScore, t0 = performance.now();
+      shownScore = score;
+      const step = (now) => {
+        const k = Math.min(1, (now - t0) / 900);
+        $('score').textContent = Math.round(from + (score - from) * (1 - Math.pow(1 - k, 3)));
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+
+    function setSignals(signals, scamType, impersonating, check) {
+      const probs = check && check.probabilities;
+      SIGNALS.forEach((k) => {
+        const el = $('sig-' + k);
+        const p = probs ? probs[k] : null;
+        el.classList.toggle('on', p != null ? p >= 0.7 : !!(LLM_MAP[k] && signals?.[LLM_MAP[k]]));
+        el.querySelector('.pct').textContent = p != null ? `${Math.round(p * 100)}%` : '';
+      });
+      const as = impersonating && impersonating !== 'none' ? ` · claims to be: ${impersonating.replace(/_/g, ' ')}` : '';
+      $('stype').textContent = scamType && scamType !== 'none' ? typeLabel(scamType) + as : '';
+      $('jevinfo').innerHTML = check && check.detector === 'jev'
+        ? `<b>${esc(t('jev.detectedBy'))}</b> · ${esc(check.level || '')} · ${esc(t('jev.confidence', { n: Math.round((check.confidence || 0) * 100) }))} · ${((check.ms || 0) / 1000).toFixed(1)}s`
+        : check && check.detector === 'llm' ? 'Chat-model detector' : '';
+    }
+
+    function bubble(speaker, text, interim) {
+      const el = document.createElement('div');
+      el.className = `msg ${speaker}${interim ? ' interim' : ''}`;
+      el.innerHTML = `<div class="who">${esc(t(WHO[speaker] ?? speaker))}</div><div class="bubble">${esc(text)}</div>`;
+      return el;
+    }
+    function addLine(speaker, text, isFinal) {
+      const chat = $('chat');
+      chat.querySelector('.empty')?.remove();
+      const interim = chat.querySelector(`.msg.interim.${speaker}`);
+      if (interim && !isFinal) { interim.querySelector('.bubble').textContent = text; }
+      else {
+        const el = bubble(speaker, text, !isFinal);
+        if (interim) interim.replaceWith(el); else chat.appendChild(el);
+      }
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function setCheck(id, done, doneKey, pendingKey) {
+      $(id).className = 'check' + (done ? ' done' : '');
+      $(id).innerHTML = done ? `<span>${esc(t(doneKey))}</span>` : `<span class="spin"></span><span>${esc(t(pendingKey))}</span>`;
+    }
+    function showAlert(scamType, reason, voice, family) {
+      $('alert').classList.add('show');
+      $('alertType').textContent = t('dash.type_', { t: typeLabel(scamType) });
+      $('alertReason').textContent = reason || '';
+      setCheck('chkVoice', voice, 'dash.voiceDone', 'dash.voicePending');
+      setCheck('chkFamily', family, 'dash.familyDone', 'dash.familyPending');
+    }
+
+    function resetView(callSid, from, status) {
+      current = callSid;
+      timerStart = 0;
+      $('timer').textContent = '0:00';
+      $('callerNum').textContent = from && from !== 'unknown' ? from : t('dash.unknown');
+      $('chat').innerHTML = `<div class="empty">${esc(t('dash.listening'))}</div>`;
+      $('alert').classList.remove('show');
+      setRisk(0, '');
+      setSignals(null, 'none', null, null);
+      setStatus(status);
+    }
+    const mine = (callSid) => callSid === current;
+
+    function addHistory(h, prepend = true) {
+      $('historyNone').style.display = 'none';
+      const [color] = band(h.maxRisk);
+      const tr = document.createElement('tr');
+      tr.className = h.flagged ? 'row-scam' : 'row-normal';
+      const d = new Date(h.startedAt);
+      tr.innerHTML = `
+        <td class="num">${d.toLocaleDateString([], { day: 'numeric', month: 'short' })} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+        <td class="num">${esc(h.from === 'unknown' ? t('dash.unknown') : h.from)}</td>
+        <td><span class="pill" style="background:${color}">${h.maxRisk}</span></td>
+        <td class="type">${h.flagged ? '⚠️ ' + esc(typeLabel(h.scamType)) : '✅ ' + esc(t('dash.normalCall'))}</td>
+        <td class="sum">${esc(h.summary)}</td>`;
+      if (prepend) $('history').prepend(tr); else $('history').appendChild(tr);
+    }
+
+    function setHotline(country) {
+      const r = country && country.reporting;
+      if (!r) return;
+      $('hotline').innerHTML = `<span>${esc(country.name)}:</span> <b>${esc(r.name)}</b>${r.phone ? ` · 📞 <b>${esc(r.phone)}</b>` : ''}${r.url ? ` · <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url.replace(/^https?:\/\//, ''))}</a>` : ''}`;
+    }
+
+    i18n.ready.then(() => {
+      for (const [code, name] of Object.entries(i18n.langs)) $('lang').appendChild(new Option(name, code, false, code === i18n.lang));
+      $('lang').onchange = (e) => i18n.setLang(e.target.value);
+      setStatus('idle');
+      setRisk(0, '');
+
+      const socket = io();
+      socket.on('connect', () => { $('conn').className = 'conn on'; $('conn').lastChild.textContent = t('dash.online'); });
+      socket.on('disconnect', () => { $('conn').className = 'conn'; $('conn').lastChild.textContent = t('dash.offline'); });
+
+      socket.on('snapshot', ({ live, history, scamTypes, country, riskThreshold }) => {
+        if (scamTypes) SCAM_TYPE = scamTypes;
+        if (riskThreshold) { THRESHOLD = riskThreshold; $('scaleRed').firstChild.nodeValue = `${riskThreshold}+ `; }
+        setHotline(country);
+        $('history').innerHTML = '';
+        history.forEach((h) => addHistory(h, false));
+        $('historyNone').style.display = history.length ? 'none' : '';
+        const c = live.at(-1);
+        if (!c) { current = null; setStatus('idle'); return; }
+        resetView(c.callSid, c.from, c.status);
+        if (c.status === 'in-call') timerStart = c.startedAt;
+        c.transcript.forEach((l) => addLine(l.speaker, l.text, true));
+        setRisk(c.risk, c.reason, c.check?.tier, c.check?.status);
+        setSignals(c.signals, c.scamType, c.impersonating, c.check);
+        if (c.flagged) showAlert(c.scamType, c.reason, c.voice, c.family);
+      });
+
+      socket.on('call:ringing', ({ callSid, from }) => resetView(callSid, from, 'ringing'));
+      socket.on('call:started', ({ callSid, from }) => {
+        if (!mine(callSid)) resetView(callSid, from, 'in-call');
+        else { if (from !== 'unknown') $('callerNum').textContent = from; setStatus('in-call'); }
+      });
+      socket.on('transcript-update', ({ callSid, speaker, text, isFinal }) => { if (mine(callSid)) addLine(speaker, text, isFinal); });
+      socket.on('risk-update', (u) => {
+        if (!mine(u.callSid)) return;
+        setRisk(u.score, u.reason, u.tier, u.status);
+        setSignals(u.signals, u.scamType, u.impersonating, u);
+      });
+      socket.on('scam-detected', ({ callSid, scamType, reason }) => { if (mine(callSid)) showAlert(scamType, reason, false, false); });
+      socket.on('alert:sent', ({ callSid, channel }) => {
+        if (!mine(callSid)) return;
+        if (channel === 'voice') setCheck('chkVoice', true, 'dash.voiceDone');
+        if (channel === 'sms' || channel === 'whatsapp') setCheck('chkFamily', true, 'dash.familyDone');
+      });
+      socket.on('call:ended', ({ callSid }) => {
+        if (!mine(callSid)) return;
+        setStatus('ended');
+        $('chat').querySelectorAll('.msg.interim').forEach((m) => m.remove());
+      });
+      socket.on('history:added', (h) => addHistory(h));
+    });
+
+    $('demo').addEventListener('click', async () => {
+      $('demo').disabled = true;
+      try {
+        const res = await fetch('/demo/start', { method: 'POST' });
+        if (!res.ok) alert(t('dash.demoRunning'));
+      } finally {
+        setTimeout(() => ($('demo').disabled = false), 3000);
+      }
+    });
+  </script>
+</body>
+</html>

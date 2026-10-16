@@ -1,0 +1,36 @@
+# Render Blueprint: free public judge demo (no phone calls, no speech-to-text, nothing is ever sent).
+# Deploy: Render dashboard → New → Blueprint → pick this repo. See DEPLOY.md.
+services:
+  - type: web
+    name: wessuwan-demo
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: node dist/index.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: PUBLIC_DEMO
+        value: "true"
+      - key: COUNTRY
+        value: US
+      - key: DETECTOR
+        value: jev
+      - key: JEV_MODEL
+        value: typesafe/jev-1.13
+      - key: JEV_URL
+        value: https://api.defapi.org/api/v1/decisions
+      - key: JEV_API_KEY
+        sync: false # paste it in the Render dashboard; never in git
+      - key: RATE_LIMIT_PER_HOUR
+        value: "20"
+      - key: LOG_LEVEL
+        value: info
+      - key: GITHUB_URL
+        sync: false
+      - key: PITCH_DECK_URL
+        sync: false

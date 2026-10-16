@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wessuwan</title>
+  <meta name="description" content="Wessuwan: an AI guardian that protects elderly people from phone scams in real time." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/site.css" />
+  <style>
+    .hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; align-items: center; padding: 18px 0 28px; }
+    @media (max-width: 860px) { .hero { grid-template-columns: minmax(0, 1fr); } }
+    .hero h1 { font-size: clamp(2rem, 4.6vw, 3.2rem); margin: 0 0 14px; color: var(--gold); font-weight: 800; line-height: 1.1; }
+    .hero p.lead { margin: 0 0 12px; font-size: 1.12rem; }
+    .cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+    .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+    .steps li { display: flex; gap: 12px; align-items: flex-start; }
+    .steps b.n { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: var(--navy-0); }
+    .three { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
+    @media (max-width: 860px) { .three { grid-template-columns: minmax(0, 1fr); } }
+    h2.sec { margin: 30px 0 12px; }
+    .quick { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+    .quick a { text-decoration: none; color: var(--text); display: block; transition: transform .15s, border-color .15s; }
+    .quick a:hover { transform: translateY(-2px); border-color: var(--gold); }
+    .tag { font-size: .75rem; font-weight: 800; border-radius: 6px; padding: 1px 8px; }
+    .tag.scam { background: rgba(255, 77, 77, .2); color: #ffb3b3; }
+    .tag.normal { background: rgba(46, 204, 113, .18); color: #a5f0c5; }
+    .quick h3 { margin: 8px 0 4px; font-size: 1.02rem; }
+    .quick p { margin: 0; color: var(--muted); font-size: .88rem; }
+    .links { display: flex; gap: 12px; flex-wrap: wrap; }
+    .links a[data-missing] { opacity: .5; pointer-events: none; }
+    .story { color: var(--muted); font-style: italic; }
+  </style>
+</head>
+<body>
+  <header class="site" id="site-header"></header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <h1 data-i18n="home.title">Stop phone scams before the money moves</h1>
+        <p class="lead" data-i18n="home.lead"></p>
+        <div class="cta">
+          <a class="btn primary" href="/try?sample=scam-03-bank-fraud-department&amp;play=1">▶ <span data-i18n="home.ctaTry"></span></a>
+          <a class="btn" href="/try?sample="><span data-i18n="home.ctaOwn"></span></a>
+          <a class="btn" href="/dashboard"><span data-i18n="home.dashboardDemo"></span></a>
+        </div>
+      </div>
+      <div class="card">
+        <h2 data-i18n="home.howTitle">How it works</h2>
+        <ol class="steps">
+          <li><b class="n">1</b><div data-i18n="home.how1"></div></li>
+          <li><b class="n">2</b><div data-i18n="home.how2"></div></li>
+          <li><b class="n">3</b><div data-i18n="home.how3"></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <h2 class="sec" data-i18n="home.samplesTitle">Pick a call and watch the risk rise</h2>
+    <div class="quick" id="quick"></div>
+
+    <div class="three">
+      <section class="card"><h2 data-i18n="home.problemTitle"></h2><p data-i18n="home.problem"></p></section>
+      <section class="card"><h2 data-i18n="home.privacyTitle"></h2><p data-i18n="home.privacy"></p><a href="/privacy" data-i18n="home.privacyLink"></a></section>
+    </div>
+
+    <h2 class="sec" data-i18n="home.aboutTitle">About the name</h2>
+    <p class="story" data-i18n="brand.story"></p>
+
+    <h2 class="sec" data-i18n="home.moreTitle">More</h2>
+    <div class="links">
+      <a class="btn" href="/dashboard">📺 <span data-i18n="home.dashboardDemo"></span></a>
+      <a class="btn" id="l-github" href="#" target="_blank" rel="noopener" data-i18n="nav.github">GitHub</a>
+      <a class="btn" id="l-deck" href="#" target="_blank" rel="noopener" data-i18n="nav.deck">Pitch deck</a>
+    </div>
+  </main>
+
+  <footer class="site" id="site-footer"></footer>
+
+  <script src="/i18n.js"></script>
+  <script src="/site.js"></script>
+  <script>
+    const PICKS = ['scam-03-bank-fraud-department', 'scam-01-fake-irs', 'scam-04-grandparent-emergency', 'scam-05-tech-support', 'normal-01-bank-card-check', 'normal-04-grandchild-chat'];
+    (async () => {
+      await i18n.ready;
+      const [cfg, samples] = await Promise.all([
+        fetch('/api/demo-config').then((r) => r.json()).catch(() => ({ links: {} })),
+        fetch('/api/samples').then((r) => r.json()).catch(() => []),
+      ]);
+      const quick = document.getElementById('quick');
+      for (const id of PICKS) {
+        const s = samples.find((x) => x.id === id);
+        if (!s) continue;
+        const a = document.createElement('a');
+        a.className = 'card';
+        a.href = `/try?sample=${encodeURIComponent(id)}&play=1`;
+        const first = (s.lines[0] || '').replace(/^\w+:\s*/, '');
+        a.innerHTML = `<span class="tag ${s.kind}"></span><h3></h3><p></p>`;
+        a.querySelector('.tag').textContent = t(s.kind === 'scam' ? 'home.scam' : 'home.normal');
+        a.querySelector('h3').textContent = s.title;
+        a.querySelector('p').textContent = first.length > 90 ? first.slice(0, 90) + '…' : first;
+        quick.appendChild(a);
+      }
+      for (const [id, url] of [['l-github', cfg.links?.github], ['l-deck', cfg.links?.pitchDeck]]) {
+        const el = document.getElementById(id);
+        if (url) el.href = url; else { el.setAttribute('data-missing', ''); el.title = t('nav.comingSoon'); }
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+{
+  "code": "CA",
+  "name": "Canada",
+  "defaultLanguage": "en-CA",
+  "sttLanguages": [
+    "en-CA",
+    "fr-CA"
+  ],
+  "privacyRegime": "PIPEDA",
+  "allPartyConsent": false,
+  "consentNote": "One-party consent applies under the Criminal Code; PIPEDA requires transparency, so Wessuwan always announces itself.",
+  "reporting": {
+    "name": "Canadian Anti-Fraud Centre",
+    "phone": "1-888-495-8501",
+    "url": "https://antifraudcentre-centreantifraude.ca"
+  },
+  "localScams": [
+    {
+      "type": "government_impersonation",
+      "description": "Canada Revenue Agency (CRA) says you owe taxes and police will arrest you",
+      "phrases": [
+        "this is the Canada Revenue Agency",
+        "you will be arrested today"
+      ]
+    },
+    {
+      "type": "grandparent_family_emergency",
+      "description": "Emergency/bail scam: grandchild arrested, a 'lawyer' sends a courier to pick up cash at the door",
+      "phrases": [
+        "your grandson is in custody",
+        "a courier will come for the bail money"
+      ]
+    },
+    {
+      "type": "government_impersonation",
+      "description": "Service Canada says your SIN is compromised",
+      "phrases": [
+        "your SIN has been used in a crime"
+      ]
+    }
+  ],
+  "examplePhrases": {
+    "urgency": [
+      "right now",
+      "before end of day"
+    ],
+    "threat": [
+      "the RCMP will arrest you"
+    ],
+    "data_request": [
+      "confirm your SIN",
+      "read me the verification code"
+    ],
+    "transfer_request": [
+      "pay with Bitcoin",
+      "buy gift cards"
+    ]
+  }
+}

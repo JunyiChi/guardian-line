@@ -1,0 +1,7 @@
+caller: Hi Grandpa! It's Emma.
+protected: Emma! What a nice surprise. How are you, sweetheart?
+caller: I'm good! I just finished my exams, and I wanted to tell you I got an A in biology.
+protected: That's wonderful, I'm so proud of you.
+caller: Thanks! Mom says we're coming to visit you next Sunday. Should we bring anything for lunch?
+protected: Just bring yourselves. I'll make my famous apple pie.
+caller: Yay! I can't wait. Love you, Grandpa, see you Sunday.

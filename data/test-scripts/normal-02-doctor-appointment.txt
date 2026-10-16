@@ -1,0 +1,7 @@
+caller: Hello, this is Jenny from Dr. Patel's office at Riverside Family Medicine, calling for Dorothy Adams.
+protected: This is Dorothy.
+caller: I'm calling to remind you of your appointment on Thursday at ten thirty for your blood pressure check.
+protected: Oh yes, thank you. Do I need to bring anything?
+caller: Just your medication list and your insurance card. Please come about ten minutes early to check in.
+protected: Okay, I'll be there.
+caller: Wonderful. If you need to reschedule, just call the office. See you Thursday.

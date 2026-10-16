@@ -1,0 +1,10 @@
+caller: Hello, this is Officer Daniel Brooks with the Internal Revenue Service, badge number 4471. Am I speaking with Margaret Wilson?
+protected: Yes, this is Margaret. What is this about?
+caller: Ma'am, our records show you owe eight thousand four hundred dollars in back taxes from 2023, and a federal warrant has been issued for your arrest.
+protected: Oh my goodness, I always pay my taxes. There must be a mistake.
+caller: I understand, but the local police will come to your house within the next two hours unless the balance is settled today.
+protected: What do I have to do?
+caller: You can resolve this right now. Go to the nearest Walgreens or CVS and buy Target gift cards for the full amount. Stay on the line with me while you drive.
+protected: Gift cards? For taxes?
+caller: Yes, it is the fastest federal payment method. And do not tell the store clerk what they are for, this is a confidential legal matter.
+caller: Once you have the cards, scratch off the back and read me the numbers, and I will cancel the warrant immediately.

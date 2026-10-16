@@ -1,0 +1,8 @@
+caller: Hi Susan, it's David, we met on the investment group last month. I wanted to share some great news.
+protected: Oh hello David. What news?
+caller: My trading platform made forty percent returns this month. Remember the five hundred dollars you put in? It's now worth over two thousand.
+protected: Really? That's wonderful.
+caller: There's a special opportunity closing tonight. If you add twenty thousand dollars, you could double it in two weeks, guaranteed.
+protected: Twenty thousand is a lot of money.
+caller: I know, but this window closes at midnight. You'll need to send it as cryptocurrency to the platform's wallet. I'll walk you through buying the crypto on your phone.
+caller: Also, to withdraw your current profits, the platform needs a three thousand dollar unlock fee first.

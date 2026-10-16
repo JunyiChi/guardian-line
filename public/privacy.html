@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wessuwan Privacy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/site.css" />
+  <style>
+    main.wrap { max-width: 860px; }
+    section { margin-bottom: 26px; }
+    table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--gold); }
+    .promise { font-size: 1.3rem; font-weight: 800; color: var(--gold-soft); }
+    .note { border-left: 4px solid var(--gold); padding: 10px 14px; background: rgba(212, 175, 55, .07); border-radius: 0 12px 12px 0; }
+    .table-wrap { overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <header class="site" id="site-header"></header>
+  <main class="wrap">
+    <h1 class="page-title">Privacy notice</h1>
+    <p class="promise">We can't leak what we don't keep.</p>
+    <p class="note" id="regime">This notice uses GDPR-style wording and covers the rights you have under data protection law.</p>
+
+    <section>
+      <h2>What we check</h2>
+      <p>Wessuwan protects one person from phone scams. Calls from <b>trusted contacts</b> are connected straight through and never processed. Every other caller first hears: <i>"This call is protected by Wessuwan, an AI scam protection service."</i> Only after this announcement has finished is the conversation turned into text and checked by an AI for four warning signs: urgency, threats, requests for codes or personal data, and requests for money.</p>
+    </section>
+
+    <section>
+      <h2>What we keep, and for how long</h2>
+      <div class="table-wrap"><table>
+        <tr><th>Data</th><th>What happens to it</th></tr>
+        <tr><td>Call audio</td><td><b>Never stored.</b> It passes through memory to the speech-to-text service and is gone.</td></tr>
+        <tr><td>Normal call transcript</td><td><b>Deleted the moment the call ends.</b></td></tr>
+        <tr><td>Scam call transcript</td><td>Deleted the moment the call ends.</td></tr>
+        <tr><td>Scam summary (date, caller number, scam type, risk, one-sentence reason, alerts sent)</td><td>Encrypted (AES-256-GCM) and deleted automatically after <b id="days">30</b> days.</td></tr>
+        <tr><td>Your settings and consent record</td><td>Encrypted, kept until you change or delete them.</td></tr>
+        <tr><td>Server logs</td><td>Phone numbers are masked (e.g. +1***-***-1234). Conversation text is never logged in production.</td></tr>
+      </table></div>
+    </section>
+
+    <section>
+      <h2>Who processes the data</h2>
+      <div class="table-wrap"><table>
+        <tr><th>Provider</th><th>Receives</th><th>Purpose</th></tr>
+        <tr><td>Twilio</td><td>The call, phone numbers, alert text</td><td>Calls, audio streaming, SMS/WhatsApp alerts</td></tr>
+        <tr><td>Google Speech-to-Text or Deepgram</td><td>Call audio, live</td><td>Speech-to-text</td></tr>
+        <tr><td>Defapi and TypeSafe (Jev)</td><td>The current call's transcript and the country</td><td>Scam detection</td></tr>
+        <tr><td>Google Gemini or Anthropic Claude (optional fallback)</td><td>The last 2 minutes of the transcript and a one-line summary</td><td>Scam detection fallback</td></tr>
+        <tr><td>Google Text-to-Speech (optional)</td><td>Only the fixed warning sentence</td><td>Creating the warning audio</td></tr>
+      </table></div>
+      <p>Real users are only protected with paid AI tiers set up for no training and minimal data retention. Free tiers, which may use data for training, are only used with test data.</p>
+    </section>
+
+    <section>
+      <h2>Consent</h2>
+      <p>Protection only starts after the protected person (or their legal representative) agrees on the setup page; we record the date and their name. You can withdraw at any time by turning protection off or deleting your data. Callers are informed by the announcement on every call, in every country.</p>
+      <p id="allParty"></p>
+    </section>
+
+    <section>
+      <h2>Your rights and how to delete your data</h2>
+      <p>You can ask for access, correction, deletion, restriction, objection and a copy of your data, and complain to your data protection authority.</p>
+      <p><b>Delete everything yourself:</b> open <a href="/setup">Setup</a> → <i>Delete all my data</i>, type DELETE and confirm. All summaries, trusted contacts, family numbers and the consent record are removed and protection is switched off. To pause instead, use <i>Turn protection off</i>.</p>
+      <p>Full notice: <a href="https://github.com/" id="mdlink">PRIVACY.md</a> · Security: <a href="https://github.com/" id="seclink">SECURITY.md</a></p>
+    </section>
+  </main>
+  <footer class="site" id="site-footer"></footer>
+  <script src="/i18n.js"></script>
+  <script src="/site.js"></script>
+  <script>
+    fetch('/api/demo-config').then((r) => r.json()).then((cfg) => {
+      const c = cfg.country || {};
+      if (cfg.retentionDays) document.getElementById('days').textContent = cfg.retentionDays;
+      const regime = c.privacyRegime || 'GDPR';
+      const gdpr = /GDPR/.test(regime);
+      document.getElementById('regime').textContent = gdpr
+        ? `This server is set up for ${c.name}, where the ${regime} applies. The controller processes data on the basis of your consent (Art. 6(1)(a)) and, for callers, a legitimate interest in preventing fraud (Art. 6(1)(f)). You may contact the supervisory authority at any time.`
+        : `This server is set up for ${c.name || 'your country'} (${regime}). The notice uses GDPR-style wording so the same protections apply everywhere.`;
+      document.getElementById('allParty').textContent = c.allPartyConsent
+        ? `In ${c.name}, everyone on a call must be informed. The announcement is mandatory and cannot be switched off.`
+        : '';
+      if (cfg.links?.github) {
+        document.getElementById('mdlink').href = cfg.links.github.replace(/\/$/, '') + '/blob/main/PRIVACY.md';
+        document.getElementById('seclink').href = cfg.links.github.replace(/\/$/, '') + '/blob/main/SECURITY.md';
+      }
+    }).catch(() => {});
+  </script>
+</body>
+</html>

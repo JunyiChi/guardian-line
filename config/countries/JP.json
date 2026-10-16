@@ -1,0 +1,61 @@
+{
+  "code": "JP",
+  "name": "Japan",
+  "defaultLanguage": "ja-JP",
+  "sttLanguages": [
+    "ja-JP"
+  ],
+  "privacyRegime": "APPI",
+  "allPartyConsent": false,
+  "consentNote": "Recording one's own calls is generally lawful; APPI requires purpose transparency, so Wessuwan always announces itself.",
+  "reporting": {
+    "name": "Police consultation line",
+    "phone": "#9110",
+    "url": "https://www.npa.go.jp/bureau/safetylife/hurikome/"
+  },
+  "localScams": [
+    {
+      "type": "grandparent_family_emergency",
+      "description": "Ore ore sagi: 'it's me' son or grandson lost company money or caused an accident and needs cash today",
+      "phrases": [
+        "オレだよ、オレ",
+        "会社のお金をなくしてしまった",
+        "今日中にお金が必要"
+      ]
+    },
+    {
+      "type": "police_legal",
+      "description": "Fake police or bank staff come to collect the victim's cash cards and PINs",
+      "phrases": [
+        "警察ですが、あなたのキャッシュカードが不正に使われています",
+        "暗証番号を教えてください"
+      ]
+    },
+    {
+      "type": "refund_overpayment",
+      "description": "Kanpu-kin sagi: city hall says you are owed a medical or insurance refund and sends you to an ATM",
+      "phrases": [
+        "医療費の還付金があります",
+        "ATMに行ってください"
+      ]
+    }
+  ],
+  "examplePhrases": {
+    "urgency": [
+      "今日中に",
+      "すぐに"
+    ],
+    "threat": [
+      "逮捕されます",
+      "口座が凍結されます"
+    ],
+    "data_request": [
+      "暗証番号を教えて",
+      "キャッシュカードを預かります"
+    ],
+    "transfer_request": [
+      "振り込んでください",
+      "現金を受け取りに行きます"
+    ]
+  }
+}

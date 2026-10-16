@@ -1,0 +1,55 @@
+{
+  "code": "AU",
+  "name": "Australia",
+  "defaultLanguage": "en-AU",
+  "sttLanguages": [
+    "en-AU"
+  ],
+  "privacyRegime": "Privacy Act 1988",
+  "allPartyConsent": true,
+  "consentNote": "Several states and the federal Telecommunications (Interception and Access) Act restrict listening without the knowledge of all parties. The announcement is mandatory.",
+  "reporting": {
+    "name": "Scamwatch (ACCC)",
+    "phone": "",
+    "url": "https://www.scamwatch.gov.au"
+  },
+  "localScams": [
+    {
+      "type": "government_impersonation",
+      "description": "ATO says you owe a tax debt or your Tax File Number is suspended",
+      "phrases": [
+        "this is the Australian Taxation Office",
+        "your TFN has been suspended"
+      ]
+    },
+    {
+      "type": "tech_support",
+      "description": "Telstra/NBN says your internet will be disconnected and asks for remote access",
+      "phrases": [
+        "your NBN connection will be cut off"
+      ]
+    },
+    {
+      "type": "government_impersonation",
+      "description": "myGov or Services Australia refund or account suspension",
+      "phrases": [
+        "your myGov account is locked"
+      ]
+    }
+  ],
+  "examplePhrases": {
+    "urgency": [
+      "within the hour"
+    ],
+    "threat": [
+      "the federal police will arrest you"
+    ],
+    "data_request": [
+      "what's the code we just sent"
+    ],
+    "transfer_request": [
+      "pay with gift cards",
+      "move it to a secure account"
+    ]
+  }
+}
