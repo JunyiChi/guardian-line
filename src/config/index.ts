@@ -105,7 +105,7 @@ export const config = {
   /** Public judge demo: no real SMS/calls, no STT, rate-limited /api/check, read-only settings. */
   publicDemo: {
     enabled: bool(process.env.PUBLIC_DEMO),
-    ratePerHour: num(process.env.RATE_LIMIT_PER_HOUR, 20),
+    ratePerHour: num(process.env.RATE_LIMIT_PER_HOUR, 150),
     links: {
       github: process.env.GITHUB_URL || '',
       pitchDeck: process.env.PITCH_DECK_URL || '',

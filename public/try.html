@@ -247,7 +247,14 @@
       const res = await fetch('/api/check', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ transcript, country: $('country').value, ...(prev || {}) }) });
       const data = await res.json().catch(() => ({ message: 'Something went wrong.' }));
       if (typeof data.remaining === 'number') $('quota').textContent = t('try.quota', { n: data.remaining });
-      if (res.status === 429) $('quota').textContent = t('try.quotaDone');
+      if (res.status === 429) {
+        // Friendly limit message in the visitor's own clock time, e.g. "try again in 12 minutes at 3:45 PM".
+        const at = data.resetAt ? new Date(data.resetAt) : null;
+        const time = at ? at.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+        const mins = data.resetInMinutes === 1 ? t('try.minute') : t('try.minutes', { n: data.resetInMinutes });
+        $('quota').textContent = time ? t('try.quotaDoneAt', { time }) : t('try.quotaDone');
+        if (time && data.resetInMinutes) throw new Error(t('try.rateLimited', { n: cfg?.ratePerHour ?? '', mins, time }));
+      }
       if (!res.ok) throw new Error(data.message);
       return data;
     }

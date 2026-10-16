@@ -5,7 +5,7 @@ This puts the **judge demo** online: the homepage, **Try it** (the real AI detec
 - No phone calls and no speech-to-text service are needed.
 - SMS alerts and voice warnings are **previews only**. Nothing is ever sent and no call is ever made.
 - Settings are read-only sample data. Nobody's real numbers are stored.
-- API keys stay on the server, and each visitor IP gets `RATE_LIMIT_PER_HOUR` checks (default 20) with a friendly message after that.
+- API keys stay on the server, and each visitor IP gets `RATE_LIMIT_PER_HOUR` checks (default 150) with a friendly message after that saying when they can try again.
 
 ## 1. Before you deploy
 

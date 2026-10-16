@@ -121,7 +121,9 @@ export function setupTryIt(app: Express): void {
       return res.status(429).json({
         error: 'rate_limited',
         resetInMinutes: mins,
-        message: `Thanks for trying Wessuwan! You've used all ${config.publicDemo.ratePerHour} checks for this hour. Please try again in ${mins} minute${mins === 1 ? '' : 's'}.`,
+        // The page rewrites this with the visitor's local clock time; this text is the fallback.
+        resetAt: new Date(quota.resetAt).toISOString(),
+        message: `Thanks so much for trying Wessuwan! You've used all ${config.publicDemo.ratePerHour} free checks for this hour, which keeps the demo free for everyone. You can try again in ${mins} minute${mins === 1 ? '' : 's'}.`,
       });
     }
 
