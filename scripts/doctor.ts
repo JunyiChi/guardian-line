@@ -58,7 +58,7 @@ async function main() {
       }
       const schema = { type: 'object', properties: { risk: { type: 'integer' } }, required: ['risk'], additionalProperties: false } as const;
       const r1 = await client.messages.create({
-        model: config.llm.anthropic.fastModel, max_tokens: 64, thinking: { type: 'disabled' },
+        model: config.llm.anthropic.fastModel, max_tokens: 2048, ...(config.llm.anthropic.fastModel.startsWith('claude-haiku') ? { thinking: { type: 'disabled' } } : {}),
         output_config: { effort: 'low', format: { type: 'json_schema', schema } },
         messages: [{ role: 'user', content: 'Score this call 0-100 for scam risk: "Read me the code we just texted you."' }],
       } as any);
