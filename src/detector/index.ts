@@ -6,28 +6,34 @@ import { settings } from '../settings';
 import { store } from '../store';
 import { log, shortSid } from '../privacy/log';
 import { complete, currentProvider, Tier } from './providers';
-import { AUTHORITIES, BASE_PROMPT, countryPrompt, IMPERSONATING, languageName, SCAM_TYPES } from './prompt';
+import { BASE_PROMPT, CATEGORIES, CATEGORY_TO_SCAMTYPE, countryPrompt, languageName, STAGES } from './prompt';
+import { ACTION_RANK, ACTIONS, Action, capAction, FamilyContext, familyPrompt, getFamily } from '../config/family';
+import type { Guardian, Stage } from '../events';
 import { askJev, buildTranscript, codeRequest, codeRequestDecision, decide, JevAnswer, JevDecision, levelLabel, logCheck, statusOf } from './jev';
 
 /** Only the last 2 minutes of transcript are sent; earlier parts become a one-line summary. */
 const WINDOW_MS = 2 * 60 * 1000;
 const MIN_WINDOW_LINES = 4;
 /** Weight of the newest score in the smoothed risk. */
-const SMOOTHING = 0.6;
+const SMOOTHING = 0.7;
 
-const Assessment = z.object({
-  risk: z.number().min(0).max(100),
-  scamType: z.enum(SCAM_TYPES),
-  signals: z.object({
-    urgency: z.boolean(),
-    threat: z.boolean(),
-    data_request: z.boolean(),
-    transfer_request: z.boolean(),
-  }),
-  impersonating: z.enum(IMPERSONATING),
+/** What the model returns (Guardian trajectory schema). Numeric bounds are enforced in code, not in the schema. */
+const ModelOutput = z.object({
+  risk: z.number(),
+  stage: z.enum(STAGES),
+  category: z.enum(CATEGORIES),
+  requestsOfSenior: z.array(z.string()),
+  evidence: z.array(z.string()),
+  seniorSignals: z.array(z.string()),
+  action: z.enum(ACTIONS),
+  summaryForChild: z.string(),
+  whisperText: z.string(),
   reason: z.string(),
 });
-export type Assessment = z.infer<typeof Assessment>;
+export type ModelOutput = z.infer<typeof ModelOutput>;
+
+/** Model output plus the legacy Wessuwan fields (scamType / signals / impersonating) derived from it, so every existing consumer keeps working. */
+export type Assessment = ModelOutput & { scamType: string; signals: Signals; impersonating: string };
 
 export interface ScoreInput {
   /** "caller: ..." / "protected: ..." lines. */
@@ -37,6 +43,10 @@ export interface ScoreInput {
   /** BCP-47 language of the call; the reason is written in it. */
   language?: string;
   country?: CountryProfile;
+  /** Household context (defaults to family.json). */
+  family?: FamilyContext;
+  /** The previous assessment of this call, for consistency. */
+  prior?: Assessment | null;
 }
 
 export interface Score extends Assessment {
@@ -47,39 +57,89 @@ export interface Score extends Assessment {
 }
 
 /** Pulls the JSON object out of a reply, tolerating ```json fences or chatter around it. */
-function parseAssessment(text: string): Assessment {
+function parseModelOutput(text: string): ModelOutput {
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
   if (start < 0 || end <= start) throw new Error(`no JSON object in reply: ${text.slice(0, 120)}`);
-  return Assessment.parse(JSON.parse(text.slice(start, end + 1)));
+  return ModelOutput.parse(JSON.parse(text.slice(start, end + 1)));
 }
 
-/** Enforces the hard scoring rules from the prompt in case the model drifts. */
-export function applyRules(a: Assessment): Assessment {
-  const s = a.signals;
-  let risk = Math.round(Math.min(100, Math.max(0, a.risk)));
-  const count = [s.urgency, s.threat, s.data_request, s.transfer_request].filter(Boolean).length;
-  if (count === 0) risk = Math.min(risk, 20);
-  if ((s.data_request || s.transfer_request) && AUTHORITIES.includes(a.impersonating)) risk = Math.max(risk, 80);
-  return { ...a, risk };
+/** "Guardian, is this real?" said by the protected person mid-call. Loose on purpose: speech-to-text mangles names. */
+export const WAKE_WORD = /\b(guardian|gardian|guardean|guard[iy]an)\b|小卫|守护|卫士/i;
+
+const STAGE_RANK: Record<Stage, number> = { none: 0, rapport: 1, pressure: 2, isolation: 3, extraction: 4 };
+/** Lowest risk each action implies; the model's action is treated as a hard-rule signal. */
+const ACTION_FLOOR: Record<Action, number> = { none: 0, log: 0, notify_child_after_call: 46, notify_child_now: 71, whisper_senior: 85 };
+const DATA_WORDS = /code|otp|pin\b|password|passcode|card number|account number|social security|ssn|id number|install|download|remote|anydesk|teamviewer|screen|link|verification|验证码|密码|卡号|账号|身份证|软件|链接|远程/i;
+const MONEY_WORDS = /pay|transfer|wire|money|gift card|prepaid|crypto|bitcoin|atm|fee|deposit|bail|safe account|secure account|cash|bank|转账|汇款|打款|转到|礼品卡|押金|保证金|安全账户|取钱|银行|现金/i;
+const AUTHORITY_CATS = new Set(['scam_authority']);
+
+export function bandAction(risk: number): Action {
+  return risk >= 85 ? 'whisper_senior' : risk >= 71 ? 'notify_child_now' : risk >= 46 ? 'notify_child_after_call' : risk >= 21 ? 'log' : 'none';
+}
+
+/**
+ * Enforces calibration in case the model drifts, then derives the legacy fields:
+ * - an extraction-stage scam, or a whisper-level action from the model, floors the risk at 85;
+ * - the final action is the band for the final risk, capped by the family's maxIntervention.
+ */
+export function applyRules(m: ModelOutput, family: FamilyContext = getFamily()): Assessment {
+  let risk = Math.round(Math.min(100, Math.max(0, m.risk)));
+  const scam = m.category.startsWith('scam');
+  if (scam && m.stage === 'extraction') risk = Math.max(risk, 85);
+  risk = Math.max(risk, ACTION_FLOOR[m.action]);
+  if (!scam && m.category !== 'unclear' && m.stage !== 'extraction') risk = Math.min(risk, 70); // benign categories never reach the whisper band
+  const action = capAction(bandAction(risk), family);
+
+  const asks = m.requestsOfSenior.join(' | ');
+  const extraction = m.stage === 'extraction';
+  const data = extraction && DATA_WORDS.test(asks);
+  const money = extraction && MONEY_WORDS.test(asks);
+  const signals: Signals = {
+    urgency: STAGE_RANK[m.stage] >= STAGE_RANK.pressure,
+    threat: STAGE_RANK[m.stage] >= STAGE_RANK.pressure && (AUTHORITY_CATS.has(m.category) || m.category === 'scam_family_emergency' || m.category === 'scam_tech_support'),
+    data_request: data || (extraction && !money),
+    transfer_request: money,
+  };
+  const blob = `${m.reason} ${m.evidence.join(' ')}`;
+  const impersonating =
+    m.category === 'scam_authority' ? (/bank|银行/i.test(blob) ? 'bank' : /police|公安|警|prosecut|court|检察/i.test(blob) ? 'police' : 'government')
+    : m.category === 'scam_tech_support' ? 'tech_company'
+    : m.category === 'scam_delivery_fee' ? 'delivery_company'
+    : m.category === 'scam_family_emergency' ? 'relative'
+    : m.category === 'sales_marketing' ? 'company'
+    : 'none';
+  return { ...m, risk, action, whisperText: action === 'whisper_senior' ? m.whisperText : '', scamType: CATEGORY_TO_SCAMTYPE[m.category], signals, impersonating };
+}
+
+/** The Guardian fields of an assessment, for bus events. */
+export function guardianOf(a: Assessment): Guardian {
+  return {
+    stage: a.stage, category: a.category, requests: a.requestsOfSenior, evidence: a.evidence, seniorSignals: a.seniorSignals,
+    action: a.action, summaryForChild: a.summaryForChild, whisperText: a.whisperText, reason: a.reason,
+  };
 }
 
 /** One model pass. Invalid JSON is retried once; after that it throws and the caller skips this check. */
 async function assess(input: ScoreInput, tier: Tier): Promise<Assessment> {
   const country = input.country ?? settings.country();
   const lang = languageName(input.language ?? country.defaultLanguage);
+  const family = input.family ?? getFamily();
   const user = [
-    `Write "reason" in ${lang}.`,
+    `Write "reason" in ${lang}. Write "summaryForChild" and "whisperText" in the family's language (${languageName(family.language)}).`,
+    `## Family context\n${familyPrompt(family)}`,
+    `## Previous assessment\n${input.prior ? JSON.stringify({ risk: input.prior.risk, stage: input.prior.stage, category: input.prior.category, requestsOfSenior: input.prior.requestsOfSenior, reason: input.prior.reason }) : 'null (first check of this call)'}`,
     input.earlier ? `Earlier in the call (summary): ${input.earlier}` : '',
-    `Transcript${input.earlier ? ' (last 2 minutes)' : ' so far'}:\n\n${input.transcript}`,
+    `## Transcript${input.earlier ? ' (last 2 minutes)' : ' so far'}\n${input.transcript}`,
+    'Return the updated assessment as JSON.',
   ].filter(Boolean).join('\n\n');
-  const req = { system: [BASE_PROMPT, countryPrompt(country)], user, tier, schema: Assessment };
+  const req = { system: [BASE_PROMPT, countryPrompt(country)], user, tier, schema: ModelOutput };
 
   let lastErr: unknown;
   for (let attempt = 1; attempt <= 2; attempt++) {
     const text = await complete(req);
     try {
-      return applyRules(parseAssessment(text));
+      return applyRules(parseModelOutput(text), family);
     } catch (err: any) {
       lastErr = err;
       log.warn('detector', `${currentProvider()}/${tier} returned invalid JSON (attempt ${attempt}/2): ${err?.message?.slice(0, 200) ?? err}`);
@@ -116,7 +176,8 @@ export class RiskTracker {
   /** Returns the smoothed score, and whether this update is the first threshold crossing. */
   add(raw: number, threshold = settings.get().riskThreshold): { smoothed: number; crossed: boolean } {
     const prev = this.history.at(-1)?.smoothed ?? 0;
-    const smoothed = Math.round(this.history.length ? SMOOTHING * raw + (1 - SMOOTHING) * prev : SMOOTHING * raw);
+    // >= 85 means an extraction-stage ask or a hard rule: no smoothing, the whisper must land on that sentence.
+    const smoothed = raw >= 85 ? Math.max(raw, prev) : Math.round(this.history.length ? SMOOTHING * raw + (1 - SMOOTHING) * prev : SMOOTHING * raw);
     this.history.push({ raw, smoothed, at: Date.now() });
     const crossed = !this.alerted && smoothed >= threshold;
     if (crossed) this.alerted = true;
@@ -163,14 +224,14 @@ function window(callSid: string, state: CallState): ScoreInput | null {
   const lines = rec.transcript.slice(first);
   let earlier: string | undefined;
   if (first > 0 && state.last) {
-    const sigs = Object.entries(state.signalsSoFar).filter(([, v]) => v).map(([k]) => k).join(', ') || 'none';
-    earlier = `${first} earlier lines. Caller claimed to be: ${state.last.impersonating}. Signals already seen: ${sigs}. Previous assessment: ${state.last.reason}`;
+    earlier = `${first} earlier lines. Stage reached: ${state.last.stage}. Requests so far: ${state.last.requestsOfSenior.join('; ') || 'none'}. Previous assessment: ${state.last.reason}`;
   }
   return {
     transcript: lines.map((l) => `${l.speaker}: ${l.text}`).join('\n'),
     earlier,
     language: rec.language,
     country: getCountry(settings.get().country),
+    prior: state.last,
   };
 }
 
@@ -180,18 +241,22 @@ async function llmCheck(callSid: string, state: CallState): Promise<void> {
   if (!input) return;
   const a = await scoreTranscript(input);
   if (calls.get(callSid) !== state) return; // call ended while we waited
-  state.last = a;
   for (const k of Object.keys(state.signalsSoFar) as (keyof Signals)[]) state.signalsSoFar[k] ||= a.signals[k];
   const { smoothed, crossed } = state.tracker.add(a.risk);
   if (crossed) state.detected = true;
+  // The intervention level never goes back down during a call.
+  const prevAction = state.last?.action ?? 'none';
+  const action: Action = ACTION_RANK[a.action] >= ACTION_RANK[prevAction] ? a.action : prevAction;
+  state.last = { ...a, action };
+  const guardian = guardianOf(state.last);
   bus.emit('risk-update', {
     callSid, score: smoothed, rawScore: a.risk, scamType: a.scamType, reason: a.reason,
     signals: a.signals, impersonating: a.impersonating, tier: a.tier, detector: 'llm',
-    status: state.detected ? 'scam' : statusOf(smoothed), ms: a.ms,
+    status: state.detected ? 'scam' : statusOf(smoothed), ms: a.ms, guardian,
   });
   if (crossed) {
     bus.emit('scam-detected', {
-      callSid, score: smoothed, scamType: a.scamType, reason: a.reason, signals: a.signals, impersonating: a.impersonating, detector: 'llm',
+      callSid, score: smoothed, scamType: a.scamType, reason: a.reason, signals: a.signals, impersonating: a.impersonating, detector: 'llm', guardian,
     });
   }
 }
@@ -322,9 +387,15 @@ export function setupDetector(): void {
   };
 
   bus.on('transcript-update', ({ callSid, speaker, text, isFinal, endOfSpeech }) => {
-    if (callSid.startsWith('DEMO-')) return; // demo replays carry their own scripted scores
-    if (speaker !== 'caller') return; // protected-person lines are stored, but only caller sentences trigger checks
+    if (callSid.startsWith('DEMO-')) return; // scripted demo replays carry their own scores (SIM- calls run the real detector)
     const s = stateOf(callSid);
+    if (speaker !== 'caller') {
+      // Guardian: what the protected person says (reading a code, "I'll go to the bank now") is the strongest
+      // escalation signal, so the end of their sentence triggers a check too.
+      if (isFinal && WAKE_WORD.test(text)) bus.emit('guardian:ask', { callSid, text });
+      if (isFinal && endOfSpeech) void requestCheck(callSid, s);
+      return;
+    }
     if (!isFinal) {
       s.partial = text;
       // Backup for long speech: no final result for LONG_SPEECH_CHECK_MS, check what was said so far.
@@ -352,6 +423,7 @@ export function setupDetector(): void {
   bus.on('utterance-end', ({ callSid, speaker }) => {
     const s = calls.get(callSid);
     if (speaker === 'caller' && s?.sentence.length) sentenceEnded(callSid, s);
+    else if (speaker !== 'caller' && s) void requestCheck(callSid, s);
   });
 
   bus.on('call:ended', ({ callSid }) => {

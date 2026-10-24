@@ -1,0 +1,7 @@
+caller: Hi Margaret, this is Tyler from SunBright Solar again, do you have two minutes?
+protected: Oh, hello. Guardian, is this person for real?
+caller: Sorry, who are you talking to?
+protected: Never mind. Go on.
+caller: We can schedule the free energy assessment for Friday, there's no cost and no obligation.
+protected: I'll think about it and talk to my son.
+caller: Of course, I'll follow up next week. Have a good day.

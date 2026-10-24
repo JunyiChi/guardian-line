@@ -95,6 +95,8 @@ export const config = {
   /** Comma-separated numbers that are connected straight through and never processed. */
   trustedNumbers: list(process.env.TRUSTED_NUMBERS),
   riskThreshold: num(process.env.RISK_THRESHOLD, 70),
+  /** Household context for the detector (see src/config/family.ts). Relative to the repo root. */
+  familyFile: process.env.FAMILY_FILE || 'family.json',
   /** null = auto hang-up disabled */
   autoHangupThreshold: autoHangup.toLowerCase() === 'off' ? null : num(autoHangup, 90),
   privacy: {

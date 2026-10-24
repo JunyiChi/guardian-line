@@ -35,6 +35,13 @@ const TITLES: Record<string, string> = {
   'normal-03-delivery-directions': 'Driver asks for directions (normal)',
   'normal-04-grandchild-chat': 'Grandchild calls to chat (normal)',
   'normal-05-charity-no-payment': 'Charity says thank you (normal)',
+  'normal-06-sales-solar': 'Pushy solar salesman (normal)',
+  'normal-07-delivery-real': 'Real courier at the gate (normal)',
+  'normal-08-zh-baojianpin': '保健品推销 (normal, 中文)',
+  'normal-09-sales-ask-guardian': 'Salesman + "Guardian, is this real?" (normal)',
+  'scam-12-delivery-customs-fee': 'Fake courier, customs fee, card number',
+  'scam-13-grandson-bail': 'Grandson in jail, gift cards, secrecy',
+  'scam-14-zh-gongjianfa': '冒充公检法，安全账户 (中文)',
 };
 
 interface Sample { id: string; title: string; kind: 'scam' | 'normal'; lines: string[] }

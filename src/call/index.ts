@@ -6,9 +6,11 @@ import { bus } from '../events';
 import { config } from '../config';
 import { settings } from '../settings';
 import { log, maskNumber, shortSid } from '../privacy/log';
+import { createCall, dropBridge, endCall, ensureConferenceSid, getBridge, bridgeByName, kick, setBridge } from './twilio';
+import { getFamily } from '../config/family';
 
 /** Mandatory, always on, cannot be configured away. Spoken before any audio reaches the AI. */
-export const ANNOUNCEMENT = 'This call is protected by Wessuwan, an AI scam protection service.';
+export const ANNOUNCEMENT = 'This call is protected by Guardian, a family safety service.';
 /** Repeated in the country's main language when it isn't English. */
 const ANNOUNCEMENT_LOCAL: Record<string, { text: string; lang: string }> = {
   de: { text: 'Dieser Anruf wird von Wessuwan geschützt, einem KI-Dienst zum Schutz vor Betrug.', lang: 'de-DE' },
@@ -16,6 +18,18 @@ const ANNOUNCEMENT_LOCAL: Record<string, { text: string; lang: string }> = {
   fr: { text: 'Cet appel est protégé par Wessuwan, un service de protection contre les arnaques par IA.', lang: 'fr-FR' },
   es: { text: 'Esta llamada está protegida por Wessuwan, un servicio de protección contra estafas con IA.', lang: 'es-US' },
 };
+
+/** Amazon Polly neural voices for the whisper, by language. */
+const VOICES: Record<string, { voice: string; language: string }> = {
+  en: { voice: 'Polly.Joanna-Neural', language: 'en-US' },
+  zh: { voice: 'Polly.Zhiyu-Neural', language: 'cmn-CN' },
+  es: { voice: 'Polly.Lupe-Neural', language: 'es-US' },
+  ja: { voice: 'Polly.Kazuha-Neural', language: 'ja-JP' },
+};
+export function sayTwiml(text: string, lang?: string): string {
+  const v = VOICES[(lang ?? getFamily().language).split('-')[0]] ?? VOICES.en;
+  return `<Say voice="${v.voice}" language="${v.language}">${escapeXml(text)}</Say>`;
+}
 
 function escapeXml(s: string): string {
   return s.replace(/[<>&'"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[c]!);
@@ -54,6 +68,37 @@ export function mediaUpgradeAllowed(req: IncomingMessage): boolean {
   return signatureOk(Array.isArray(sig) ? sig[0] : sig, url, {});
 }
 
+/** Both legs end the conference when they leave, so neither party is ever left alone with silence. */
+function conferenceTwiml(name: string, _caller: boolean): string {
+  const cb = config.publicUrl ? ` statusCallback="${escapeXml(config.publicUrl)}/twilio/conference-status" statusCallbackEvent="start end join leave"` : '';
+  // waitUrl="" = no hold music while the caller waits the few seconds until the protected person answers.
+  return `<Dial><Conference beep="false" waitUrl="" startConferenceOnEnter="true" endConferenceOnExit="true"${cb}>${escapeXml(name)}</Conference></Dial>`;
+}
+
+/** Dials the protected person into the caller's conference. Runs right after the webhook response is sent. */
+async function dialSenior(callerCallSid: string, conf: string, protectedNumber: string): Promise<void> {
+  const b = getBridge(callerCallSid);
+  if (!b) return;
+  if (!protectedNumber) return log.error('call', `${shortSid(callerCallSid)}: no protected phone number, nobody to bridge`);
+  if (!config.twilio.accountSid || !config.twilio.authToken || process.env.MOCK === 'true' || config.publicDemo.enabled) {
+    return log.info('mock', `${shortSid(callerCallSid)}: would dial ${maskNumber(protectedNumber)} into conference ${conf}`);
+  }
+  try {
+    const q = encodeURIComponent(conf);
+    b.seniorCallSid = await createCall({
+      to: protectedNumber,
+      url: `${config.publicUrl}/twilio/join?conf=${q}`,
+      statusCallback: `${config.publicUrl}/twilio/join-status?caller=${encodeURIComponent(callerCallSid)}`,
+      statusCallbackEvent: 'answered completed',
+      timeoutSec: 20,
+    });
+    log.info('call', `${shortSid(callerCallSid)}: dialing protected person (${shortSid(b.seniorCallSid)}) into ${conf}`);
+  } catch (err: any) {
+    log.error('call', `${shortSid(callerCallSid)}: could not dial the protected person: ${err?.message ?? err}; ending the call`);
+    endCall(callerCallSid).catch(() => undefined);
+  }
+}
+
 /**
  * Twilio voice webhook + media stream.
  * - Protection off (or no consent recorded) and trusted contacts: dialed straight through, never processed.
@@ -65,7 +110,8 @@ export function setupCall(app: Express, wss: WebSocketServer): void {
     const from: string = req.body?.From ?? 'unknown';
     const callSid: string = req.body?.CallSid ?? '';
     const st = settings.get();
-    const dial = `<Dial>${escapeXml(st.protectedNumber)}</Dial>`;
+    // Trusted / unprotected calls: plain bridge, caller ID passed through (allowed for the inbound From).
+    const dial = `<Dial callerId="${escapeXml(from)}">${escapeXml(st.protectedNumber)}</Dial>`;
     if (!st.protectedNumber) log.error('call', 'no protected phone number set: complete the setup page');
 
     if (!settings.active()) {
@@ -83,15 +129,128 @@ export function setupCall(app: Express, wss: WebSocketServer): void {
     bus.emit('call:ringing', { callSid, from });
     const wsUrl = config.publicUrl.replace(/^http/, 'ws') + '/media';
     const local = ANNOUNCEMENT_LOCAL[settings.country().defaultLanguage.split('-')[0]];
+    // Guardian: the caller waits in a conference; the protected person is dialed into it (see dialSenior).
+    // A conference is the only Twilio topology where audio can be played to one participant only (the whisper).
+    const conf = `guard-${callSid}`;
+    setBridge({ name: conf, conferenceSid: null, callerCallSid: callSid, seniorCallSid: null, seniorJoined: false, from });
     res.type('text/xml').send(
       '<Response>' +
         `<Say language="en-US">${ANNOUNCEMENT}</Say>` +
         (local ? `<Say language="${local.lang}">${escapeXml(local.text)}</Say>` : '') +
         `<Start><Stream url="${escapeXml(wsUrl)}" track="both_tracks">` +
         `<Parameter name="from" value="${escapeXml(from)}"/></Stream></Start>` +
-        dial +
+        conferenceTwiml(conf, true) +
       '</Response>',
     );
+    void dialSenior(callSid, conf, st.protectedNumber);
+  });
+
+  /** The protected person answered our outbound call: join the caller's conference. */
+  app.all('/twilio/join', requireTwilio, (req, res) => {
+    const conf = String(req.query.conf ?? '');
+    const b = bridgeByName(conf);
+    if (!b) {
+      log.warn('call', `join for unknown conference ${conf}: hanging up`);
+      res.type('text/xml').send('<Response><Hangup/></Response>');
+      return;
+    }
+    res.type('text/xml').send(`<Response>${conferenceTwiml(conf, false)}</Response>`);
+  });
+
+  /** Status of the outbound leg to the protected person: not answered -> release the caller. */
+  app.post('/twilio/join-status', requireTwilio, (req, res) => {
+    res.sendStatus(204);
+    const caller = String(req.query.caller ?? '');
+    const status = String(req.body?.CallStatus ?? '');
+    const b = getBridge(caller);
+    if (!b) return;
+    if (status === 'in-progress' || status === 'answered') {
+      b.seniorJoined = true;
+      log.info('call', `${shortSid(caller)}: protected person answered, bridged in conference`);
+      return;
+    }
+    if (['no-answer', 'busy', 'failed', 'canceled'].includes(status) || (status === 'completed' && !b.seniorJoined)) {
+      log.warn('call', `${shortSid(caller)}: protected person did not answer (${status}); ending the caller's call`);
+      endCall(caller).catch((err) => log.error('call', `could not end caller ${shortSid(caller)}: ${err.message}`));
+    }
+  });
+
+  /** Conference events: learn the ConferenceSid (needed for announce/kick) and clean up at the end. */
+  app.post('/twilio/conference-status', requireTwilio, (req, res) => {
+    res.sendStatus(204);
+    const name = String(req.body?.FriendlyName ?? '');
+    const event = String(req.body?.StatusCallbackEvent ?? '');
+    const b = bridgeByName(name);
+    if (!b) return;
+    if (req.body?.ConferenceSid) b.conferenceSid = String(req.body.ConferenceSid);
+    const leg = req.body?.CallSid ? String(req.body.CallSid) : '';
+    if (event === 'participant-join' && leg && leg !== b.callerCallSid && (!b.seniorCallSid || b.seniorCallSid === leg)) {
+      b.seniorCallSid = leg;
+      b.seniorJoined = true;
+    }
+    log.debug('call', `${shortSid(b.callerCallSid)}: conference ${event}${req.body?.CallSid ? ` (${shortSid(String(req.body.CallSid))})` : ''}`);
+    if (event === 'conference-end') dropBridge(b.callerCallSid);
+  });
+
+  /** The family member answered our alert call: summary + keypad menu. */
+  app.all('/twilio/family-call', requireTwilio, (req, res) => {
+    const caller = String(req.query.caller ?? '');
+    const st = settings.get();
+    const name = st.protectedName;
+    const summary = String(req.query.summary ?? '');
+    const lang = getFamily().language;
+    const line = lang.startsWith('zh')
+      ? `Guardian 警报。${name}正在接一通疑似诈骗电话。${summary} 按 1 立即加入通话。按 2 断开对方并和${name}通话。`
+      : `Guardian alert. ${name} is on a call that looks like a scam. ${summary} Press 1 to join the call now. Press 2 to disconnect the caller and talk to ${name}.`;
+    const action = `${config.publicUrl}/twilio/family-choice?caller=${encodeURIComponent(caller)}`;
+    res.type('text/xml').send(
+      `<Response><Gather numDigits="1" timeout="8" action="${escapeXml(action)}" method="POST">${sayTwiml(line, lang)}</Gather>` +
+      `<Gather numDigits="1" timeout="8" action="${escapeXml(action)}" method="POST">${sayTwiml(line, lang)}</Gather>` +
+      `${sayTwiml(lang.startsWith('zh') ? '没有收到按键，再见。' : 'No key pressed. Goodbye.', lang)}</Response>`,
+    );
+  });
+
+  /** 1 = join the conference, 2 = remove the caller, then join and talk to the protected person. */
+  app.post('/twilio/family-choice', requireTwilio, async (req, res) => {
+    const caller = String(req.query.caller ?? '');
+    const digit = String(req.body?.Digits ?? '');
+    const b = getBridge(caller);
+    const lang = getFamily().language;
+    const zh = lang.startsWith('zh');
+    if (!b) {
+      res.type('text/xml').send(`<Response>${sayTwiml(zh ? '通话已经结束了。' : 'That call has already ended.', lang)}</Response>`);
+      return;
+    }
+    // Family leg never ends the conference when it leaves.
+    const join = `<Dial><Conference beep="false" waitUrl="" startConferenceOnEnter="true" endConferenceOnExit="false">${escapeXml(b.name)}</Conference></Dial>`;
+    if (digit === '2') {
+      const conf = await ensureConferenceSid(b).catch(() => null);
+      if (conf) {
+        try {
+          await kick(conf, b.callerCallSid);
+          bus.emit('alert:sent', { callSid: caller, channel: 'kick', message: 'Caller removed by the family (pressed 2)' });
+        } catch (err: any) {
+          log.error('call', `${shortSid(caller)}: family kick failed: ${err?.message ?? err}`);
+        }
+      }
+      res.type('text/xml').send(`<Response>${sayTwiml(zh ? '已断开对方。正在为您接通。' : 'The caller has been disconnected. Connecting you now.', lang)}${join}</Response>`);
+      return;
+    }
+    bus.emit('alert:sent', { callSid: caller, channel: 'family-call', message: 'Family joined the call (pressed 1)' });
+    res.type('text/xml').send(`<Response>${sayTwiml(zh ? '正在加入通话。' : 'Joining the call now.', lang)}${join}</Response>`);
+  });
+
+  /**
+   * TwiML for an announcement to one participant (AnnounceUrl, GET) or a redirected leg:
+   *   /twilio/whisper?text=...&lang=zh   spoken with a neural voice
+   *   /twilio/whisper?play=<mp3 url>     pre-recorded warning
+   */
+  app.all('/twilio/whisper', requireTwilio, (req, res) => {
+    const text = String(req.query.text ?? '').slice(0, 400);
+    const play = String(req.query.play ?? '');
+    const lang = req.query.lang ? String(req.query.lang) : undefined;
+    const body = play ? `<Play>${escapeXml(play)}</Play>` : text ? sayTwiml(text, lang) : '';
+    res.type('text/xml').send(`<Response>${body}</Response>`);
   });
 
   wss.on('connection', (ws) => {
@@ -116,6 +275,7 @@ export function setupCall(app: Express, wss: WebSocketServer): void {
         bus.emit('call:audio', { callSid, speaker, payload: Buffer.from(msg.media.payload, 'base64') });
       } else if (msg.event === 'stop') {
         end();
+        setTimeout(() => dropBridge(callSid), 60_000).unref();
       }
     });
     // A dropped socket without "stop" must still end the call, or its transcript would stay in memory.

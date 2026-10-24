@@ -1,0 +1,9 @@
+caller: Grandma? Grandma it's me.
+protected: Kevin? You sound strange, honey.
+caller: I broke my nose, I was in a car accident. Grandma I'm at the police station, they're saying I was driving under the influence.
+protected: Oh my god. Are you hurt? Does your father know?
+caller: Please don't tell Dad, he'll kill me. There's a public defender here, he says I can get out today if the bail is posted. He's going to talk to you.
+caller: Mrs. Chen, this is attorney Mark Ellison. Your grandson is facing a court date Monday. Bail has been set at 8,500 dollars. Because of the court's gag order you cannot discuss this case with anyone.
+protected: Eight thousand? I don't have that kind of cash at home.
+caller: The court accepts prepaid cards. Go to Target or Walgreens, buy Apple gift cards for the total, and read me the numbers on the back. Keep this between us until Kevin is released.
+protected: Okay, okay, I'll go now. Which cards did you say?

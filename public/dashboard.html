@@ -198,6 +198,19 @@
     .hotline a { color: var(--gold-soft); }
     .sig .pct { display: block; font-size: .85em; font-variant-numeric: tabular-nums; }
     .jevinfo { margin-top: 6px; color: var(--muted); font-size: .8em; min-height: 1.2em; }
+    /* Guardian: scam trajectory + what the caller wants + intervention log */
+    .guardian { width: 100%; max-width: 440px; margin-top: 12px; text-align: left; }
+    .stages { display: flex; gap: 4px; margin-bottom: 8px; }
+    .stages span { flex: 1; text-align: center; font-size: .72em; padding: 5px 2px; border-radius: 6px; background: rgba(127,127,127,.12); color: var(--muted); letter-spacing: .02em; }
+    .stages span.on { color: #fff; }
+    .stages span.on.s1 { background: var(--green); } .stages span.on.s2 { background: #c9a227; } .stages span.on.s3 { background: #e07b2a; } .stages span.on.s4 { background: var(--red); }
+    .gwants { font-size: .9em; min-height: 1.3em; } .gwants b { color: var(--gold-soft); }
+    .gwants ul { margin: 2px 0 6px 18px; padding: 0; } .gwants li { margin: 1px 0; }
+    .gaction { display: inline-block; margin-top: 4px; font-size: .78em; padding: 3px 8px; border-radius: 999px; background: rgba(127,127,127,.15); color: var(--muted); }
+    .gaction.l3, .gaction.l4 { background: var(--red); color: #fff; } .gaction.l2 { background: #c9a227; color: #fff; }
+    .glog { margin-top: 8px; font-size: .8em; color: var(--muted); max-height: 7em; overflow: auto; }
+    .glog div { padding: 2px 0; border-top: 1px dashed rgba(127,127,127,.25); }
+    .simbar { display: flex; gap: 6px; align-items: center; } .simbar select { max-width: 220px; font-size: .85em; }
     .jevinfo b { color: var(--gold-soft); }
     .tier { font-size: .55em; color: var(--muted); margin-left: 8px; font-weight: 500; }
     .dash-bar select.lang { font: inherit; font-size: .8em; color: var(--text); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; }
@@ -214,7 +227,8 @@
     <div class="header-right">
       <select class="lang" id="lang" aria-label="Language"></select>
       <div class="conn" id="conn"><i></i><span data-i18n="dash.connecting">Connecting…</span></div>
-      <button class="demo" id="demo">▶ <span data-i18n="dash.demo">Demo mode</span></button>
+      <span class="simbar"><select id="simScript" aria-label="Script"></select><button class="demo" id="sim">▶ Live sim</button></span>
+      <button class="demo" id="demo" title="Scripted replay (no model)">▶ <span data-i18n="dash.demo">Demo mode</span></button>
     </div>
   </div>
 
@@ -264,6 +278,14 @@
             <div class="sig" id="sig-asks_for_secrecy"><span>🤫</span><div><span data-i18n="signals.asks_for_secrecy">Asks for secrecy</span><b class="pct"></b></div></div>
           </div>
           <div class="why" id="why"></div>
+          <div class="guardian" id="guardian">
+            <div class="stages" aria-label="Scam trajectory">
+              <span data-st="rapport" class="s1">rapport</span><span data-st="pressure" class="s2">pressure</span><span data-st="isolation" class="s3">isolation</span><span data-st="extraction" class="s4">extraction</span>
+            </div>
+            <div class="gwants" id="gwants"></div>
+            <span class="gaction" id="gaction">no action</span>
+            <div class="glog" id="glog"></div>
+          </div>
           <div class="jevinfo" id="jevinfo"></div>
           <div class="scale">
             <div style="border-color:var(--green)">0–39 <span data-i18n="risk.safe"></span></div>
@@ -368,6 +390,28 @@
         : check && check.detector === 'llm' ? 'Chat-model detector' : '';
     }
 
+    const STAGE_ORDER = ['none', 'rapport', 'pressure', 'isolation', 'extraction'];
+    const ACTION_LEVEL = { none: 0, log: 1, notify_child_after_call: 2, notify_child_now: 3, whisper_senior: 4 };
+    const ACTION_LABEL = { none: 'no action', log: 'logged only', notify_child_after_call: 'summary to family after call', notify_child_now: 'family alerted now', whisper_senior: 'whisper + banner + family' };
+    function setGuardian(g) {
+      const reached = g ? STAGE_ORDER.indexOf(g.stage) : 0;
+      document.querySelectorAll('.stages span').forEach((el) => el.classList.toggle('on', STAGE_ORDER.indexOf(el.dataset.st) <= reached && reached > 0));
+      const wants = g && g.requests && g.requests.length ? `<b>Caller wants ${esc(protectedName)} to:</b><ul>${g.requests.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : '';
+      const sig = g && g.seniorSignals && g.seniorSignals.length ? `<b>${esc(protectedName)}:</b> ${esc(g.seniorSignals.join(' · '))}` : '';
+      $('gwants').innerHTML = wants + sig;
+      const a = g ? g.action : 'none';
+      $('gaction').textContent = ACTION_LABEL[a] || a;
+      $('gaction').className = 'gaction l' + (ACTION_LEVEL[a] || 0);
+    }
+    const LOG_LABEL = { voice: '🔈 whisper', sms: '📱 SMS to family', whatsapp: '📱 WhatsApp to family', 'senior-sms': '📱 banner on ' , 'family-call': '📞 family call', kick: '⛔ caller removed', hangup: '⛔ hung up' };
+    function logAction(channel, message) {
+      const el = document.createElement('div');
+      const label = channel === 'senior-sms' ? `📱 banner on ${protectedName}'s phone` : (LOG_LABEL[channel] || channel);
+      el.textContent = `${new Date().toLocaleTimeString([], { hour12: false })} ${label}${message ? ' — ' + message.slice(0, 120) : ''}`;
+      $('glog').prepend(el);
+    }
+    let protectedName = 'Mom';
+
     function bubble(speaker, text, interim) {
       const el = document.createElement('div');
       el.className = `msg ${speaker}${interim ? ' interim' : ''}`;
@@ -407,6 +451,8 @@
       $('alert').classList.remove('show');
       setRisk(0, '');
       setSignals(null, 'none', null, null);
+      setGuardian(null);
+      $('glog').innerHTML = '';
       setStatus(status);
     }
     const mine = (callSid) => callSid === current;
@@ -442,7 +488,8 @@
       socket.on('connect', () => { $('conn').className = 'conn on'; $('conn').lastChild.textContent = t('dash.online'); });
       socket.on('disconnect', () => { $('conn').className = 'conn'; $('conn').lastChild.textContent = t('dash.offline'); });
 
-      socket.on('snapshot', ({ live, history, scamTypes, country, riskThreshold }) => {
+      socket.on('snapshot', ({ live, history, scamTypes, country, riskThreshold, protectedName: pn }) => {
+        if (pn) protectedName = pn;
         if (scamTypes) SCAM_TYPE = scamTypes;
         if (riskThreshold) { THRESHOLD = riskThreshold; $('scaleRed').firstChild.nodeValue = `${riskThreshold}+ `; }
         setHotline(country);
@@ -456,6 +503,7 @@
         c.transcript.forEach((l) => addLine(l.speaker, l.text, true));
         setRisk(c.risk, c.reason, c.check?.tier, c.check?.status);
         setSignals(c.signals, c.scamType, c.impersonating, c.check);
+        setGuardian(c.check && c.check.guardian);
         if (c.flagged) showAlert(c.scamType, c.reason, c.voice, c.family);
       });
 
@@ -469,10 +517,12 @@
         if (!mine(u.callSid)) return;
         setRisk(u.score, u.reason, u.tier, u.status);
         setSignals(u.signals, u.scamType, u.impersonating, u);
+        if (u.guardian) setGuardian(u.guardian);
       });
       socket.on('scam-detected', ({ callSid, scamType, reason }) => { if (mine(callSid)) showAlert(scamType, reason, false, false); });
-      socket.on('alert:sent', ({ callSid, channel }) => {
+      socket.on('alert:sent', ({ callSid, channel, message }) => {
         if (!mine(callSid)) return;
+        logAction(channel, message);
         if (channel === 'voice') setCheck('chkVoice', true, 'dash.voiceDone');
         if (channel === 'sms' || channel === 'whatsapp') setCheck('chkFamily', true, 'dash.familyDone');
       });
@@ -484,6 +534,21 @@
       socket.on('history:added', (h) => addHistory(h));
     });
 
+    // Live sim: a script replayed through the real detector (SIM- call, Twilio mocked).
+    fetch('/api/samples').then((r) => r.json()).then((samples) => {
+      const sel = $('simScript');
+      samples.forEach((smp) => { const o = document.createElement('option'); o.value = smp.id; o.textContent = smp.title || smp.id; sel.appendChild(o); });
+      const pref = samples.find((smp) => smp.id === 'scam-03-bank-fraud-department'); if (pref) sel.value = pref.id;
+    }).catch(() => {});
+    $('sim').addEventListener('click', async () => {
+      $('sim').disabled = true;
+      try {
+        const res = await fetch(`/demo/live?script=${encodeURIComponent($('simScript').value)}`, { method: 'POST' });
+        if (!res.ok) alert('A simulation is already running');
+      } finally {
+        setTimeout(() => ($('sim').disabled = false), 3000);
+      }
+    });
     $('demo').addEventListener('click', async () => {
       $('demo').disabled = true;
       try {

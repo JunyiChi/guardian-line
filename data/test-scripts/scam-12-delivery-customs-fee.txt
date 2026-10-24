@@ -1,0 +1,9 @@
+caller: Good afternoon, this is the delivery department. We have a package for Margaret Chen at Seaview Terrace.
+protected: Yes, I'm expecting something from Amazon.
+caller: That's the one. We attempted delivery this morning but there was nobody home.
+protected: Oh, I was at the clinic. Can you come again tomorrow?
+caller: We can, but the package is being held at customs and there's an outstanding import fee of 12 dollars and 80 cents that has to be cleared before release.
+protected: Customs? It's just vitamins.
+caller: It's a standard processing fee ma'am. I can take a card number over the phone right now, or I'll text you a secure link. If it's not paid today the package goes back to the sender.
+protected: Oh dear. Alright, let me get my purse. It's a Chase card.
+caller: Take your time. Just read me the sixteen digits on the front, then the expiry and the three numbers on the back.

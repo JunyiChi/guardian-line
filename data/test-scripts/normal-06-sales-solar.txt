@@ -1,0 +1,9 @@
+caller: Hi, is this Margaret? This is Tyler calling from SunBright Solar, how are you today?
+protected: Oh, fine. What is this about?
+caller: We're doing free home energy assessments in your neighborhood this month. Homeowners are saving forty to sixty percent on their electric bills.
+protected: I don't know, my son handles that kind of thing.
+caller: Totally understand. The assessment is free and there's no obligation. I can have a technician out Thursday or Friday, which works better?
+protected: I'd have to ask David first.
+caller: Of course! Honestly the incentive ends at the end of the month, so I'd hate for you to miss it. Can I at least pencil you in for Friday and send a confirmation to your email?
+protected: Well, alright, Friday, but I'm not promising anything.
+caller: Perfect, you'll get a confirmation email and a call the day before. Have a great day, Margaret.

@@ -9,7 +9,10 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test:stt": "tsx scripts/test-stt.ts",
-    "test:detector": "tsx scripts/test-detector.ts"
+    "test:detector": "tsx scripts/test-detector.ts",
+    "tunnel": "sh -c 'command -v cloudflared >/dev/null && cloudflared tunnel --url http://localhost:${PORT:-3000} || $HOME/.local/bin/cloudflared tunnel --url http://localhost:${PORT:-3000}'",
+    "sim": "sh -c 'curl -s -X POST \"http://localhost:${PORT:-3000}/demo/live?script=${1:-scam-03-bank-fraud-department}\"' --",
+    "doctor": "tsx scripts/doctor.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.134.0",

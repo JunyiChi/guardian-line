@@ -44,6 +44,17 @@ const EXPECTED: Record<string, string[]> = {
   'scam-09-delivery-fee': ['delivery_parcel'],
   'scam-10-utility-shutoff': ['utility_shutoff'],
   'scam-11-prize-lottery': ['prize_lottery'],
+  'scam-12-delivery-customs-fee': ['delivery_parcel'],
+  'scam-13-grandson-bail': ['grandparent_family_emergency'],
+  'scam-14-zh-gongjianfa': ['government_impersonation', 'police_legal'],
+};
+/**
+ * Guardian checkpoints: the risk after line N (1-based) must stay <= max. Catches premature alarms,
+ * e.g. the fake courier must look like a courier for its first 4 lines.
+ */
+const CHECKPOINTS: Record<string, { line: number; max: number }[]> = {
+  'scam-12-delivery-customs-fee': [{ line: 4, max: 45 }],
+  'scam-13-grandson-bail': [{ line: 2, max: 60 }],
 };
 const expectedTypes = (id: string) => (id.startsWith('normal') ? ['none'] : EXPECTED[id] ?? [SCAM_TYPES.find((t) => id.includes(t)) ?? '?']);
 const SHORT: Record<string, string> = {
@@ -75,6 +86,8 @@ interface Result {
   checks: number; errors: number; ms: number[]; cost: number; rule: string;
   /** The first caller line asking for a code (1-based), and whether the warning came before the reply to it. */
   codeLine: number; codeInTime: boolean;
+  /** Highest risk seen by the end of each line (index = line - 1), for checkpoints. */
+  riskByLine: number[];
 }
 
 /** A moment a check is wanted: a caller sentence ended, or the long-speech backup fired mid-sentence. */
@@ -84,11 +97,14 @@ interface Trigger { at: number; line: number; partial?: string }
  * Simulates the live trigger rules on the call clock and prints the timeline. Each check really
  * calls the detector; its real response time moves the clock.
  */
-async function simulate(lines: Line[], check: CheckFn, verbose: boolean, longSpeech: boolean): Promise<Result> {
-  const r: Result = { warnLine: -1, warnAt: -1, finalRisk: 0, scamType: '-', signals: '-', checks: 0, errors: 0, ms: [], cost: 0, rule: '', codeLine: -1, codeInTime: true };
+async function simulate(lines: Line[], check: CheckFn, verbose: boolean, longSpeech: boolean, guardianTriggers = false): Promise<Result> {
+  const r: Result = { warnLine: -1, warnAt: -1, finalRisk: 0, scamType: '-', signals: '-', checks: 0, errors: 0, ms: [], cost: 0, rule: '', codeLine: -1, codeInTime: true, riskByLine: [] };
   const triggers: Trigger[] = [];
   lines.forEach((l, i) => {
-    if (l.speaker !== 'caller') return;
+    if (l.speaker !== 'caller') {
+      if (guardianTriggers) triggers.push({ at: l.end, line: i });
+      return;
+    }
     const words = l.text.split(/\s+/);
     for (let at = l.start + config.jev.longSpeechCheckMs; longSpeech && at < l.end; at += config.jev.longSpeechCheckMs) {
       const said = Math.floor(((at - l.start) / 1000) * WORDS_PER_SEC);
@@ -120,6 +136,7 @@ async function simulate(lines: Line[], check: CheckFn, verbose: boolean, longSpe
       r.ms.push(c.ms);
       r.cost += c.cost;
       Object.assign(r, { finalRisk: c.risk, scamType: c.scamType, signals: c.signals });
+      r.riskByLine[t.line] = Math.max(r.riskByLine[t.line] ?? 0, c.risk);
       const first = c.warn && warn(busyUntil, t.line, c.rule);
       note(t.line, `${t.partial ? 'partial check' : 'check'} ${s1(at)} → ${s1(busyUntil)}${at > t.at ? ` (waited ${s1(at - t.at)})` : ''}  risk ${String(c.risk).padStart(3)} ${c.status.padEnd(8)} | ${c.detail}${first ? `  <-- WARN (${c.rule})` : ''}`);
       if (first) note(t.line, `reason: ${c.reason}`);
@@ -187,14 +204,18 @@ const jevCheck = (country: ReturnType<typeof getCountry>) => {
 
 const llmCheck = (country: ReturnType<typeof getCountry>) => {
   const tracker = new RiskTracker();
+  let prior: Awaited<ReturnType<typeof scoreTranscript>> | null = null;
   return async (lines: JevLine[]): Promise<Check> => {
-    const a = await scoreTranscript({ transcript: lines.map((l) => `${l.speaker}: ${l.text}`).join('\n'), country, language: 'en' });
+    const text = lines.map((l) => `${l.speaker}: ${l.text}`).join('\n');
+    const language = /[\u4e00-\u9fff]/.test(text) ? 'zh' : 'en';
+    const a = await scoreTranscript({ transcript: text, country, language, prior });
+    prior = a;
     const { smoothed, crossed } = tracker.add(a.risk, 70);
     return {
-      ms: a.ms, risk: smoothed, status: smoothed >= 70 ? 'scam' : smoothed >= 40 ? 'watching' : 'safe', warn: crossed, rule: 'smoothed >= 70',
+      ms: a.ms, risk: smoothed, status: smoothed >= 70 ? 'scam' : smoothed >= 40 ? 'watching' : 'safe', warn: crossed, rule: `smoothed >= 70 (${a.action})`,
       scamType: a.scamType, cost: 0, reason: a.reason,
-      signals: Object.entries(a.signals).filter(([, v]) => v).map(([k]) => k.replace('_request', '')).join(',') || '-',
-      detail: `raw ${a.risk} ${a.ms}ms ${a.tier} | ${a.scamType}`,
+      signals: `${a.stage}/${a.action}`,
+      detail: `raw ${a.risk} ${a.ms}ms ${a.tier} | ${a.category} | asks: ${a.requestsOfSenior.join('; ').slice(0, 80) || '-'}`,
     };
   };
 };
@@ -217,26 +238,28 @@ async function main() {
   console.log('clock: simulated call time (real response times); timeline times are when each line ends\n');
 
   const rows: string[][] = [];
-  let failures = 0, falseAlarms = 0, missed = 0, late = 0, totalCost = 0;
+  let failures = 0, falseAlarms = 0, missed = 0, late = 0, early = 0, totalCost = 0;
   const allMs: number[] = [];
   for (const file of files) {
     const id = file.replace('.txt', '');
     const lines = parse(path.join(DIR, file));
     console.log(`=== ${id} (${lines.length} lines, ${(lines.at(-1)!.end / 1000).toFixed(0)}s)`);
-    const r = await simulate(lines, detector === 'jev' ? jevCheck(country) : llmCheck(country), verbose, longSpeech);
+    const r = await simulate(lines, detector === 'jev' ? jevCheck(country) : llmCheck(country), verbose, longSpeech, detector === 'llm');
     const scam = id.startsWith('scam');
     const warned = r.warnLine >= 0;
     if (!scam && warned) falseAlarms++;
     if (scam && !warned) missed++;
     if (!r.codeInTime) late++;
-    const ok = !r.errors && scam === warned && r.codeInTime;
+    const earlyCp = (CHECKPOINTS[id] ?? []).find((cp) => Math.max(0, ...r.riskByLine.slice(0, cp.line)) > cp.max);
+    if (earlyCp) { early++; console.log(`  EARLY: risk ${Math.max(0, ...r.riskByLine.slice(0, earlyCp.line))} by line ${earlyCp.line} exceeds checkpoint ${earlyCp.max}`); }
+    const ok = !r.errors && scam === warned && r.codeInTime && !earlyCp;
     if (!ok) failures++;
     totalCost += r.cost;
     allMs.push(...r.ms);
     const want = expectedTypes(id);
     const avg = r.ms.length ? Math.round(r.ms.reduce((a, b) => a + b, 0) / r.ms.length) : 0;
     rows.push([
-      r.errors ? 'ERROR' : !r.codeInTime ? 'LATE' : ok ? 'PASS' : scam ? 'MISSED' : 'FALSE ALARM',
+      r.errors ? 'ERROR' : !r.codeInTime ? 'LATE' : earlyCp ? 'EARLY' : ok ? 'PASS' : scam ? 'MISSED' : 'FALSE ALARM',
       id,
       scam ? 'scam' : 'normal',
       String(r.finalRisk),
@@ -260,7 +283,7 @@ async function main() {
   console.log('|' + width.map((w) => '-'.repeat(w + 2)).join('|') + '|');
   rows.forEach((r) => console.log(fmt(r)));
   const avgAll = allMs.length ? Math.round(allMs.reduce((a, b) => a + b, 0) / allMs.length) : 0;
-  console.log(`\n${rows.length - failures}/${rows.length} passed · false alarms ${falseAlarms} · missed scams ${missed} · late code warnings ${late} · avg response ${avgAll} ms over ${allMs.length} checks${detector === 'jev' ? ` · total cost $${totalCost.toFixed(5)} ($${(totalCost / Math.max(1, allMs.length)).toFixed(6)}/check)` : ''}`);
+  console.log(`\n${rows.length - failures}/${rows.length} passed · false alarms ${falseAlarms} · missed scams ${missed} · late code warnings ${late} · early alarms ${early} · avg response ${avgAll} ms over ${allMs.length} checks${detector === 'jev' ? ` · total cost $${totalCost.toFixed(5)} ($${(totalCost / Math.max(1, allMs.length)).toFixed(6)}/check)` : ''}`);
   process.exit(failures ? 1 : 0);
 }
 

@@ -1,0 +1,4 @@
+caller: Hi, this is the Amazon driver, I have a package for unit 204 but the gate is locked.
+protected: Oh, the code is 4521, or you can leave it with the office.
+caller: Got it, I'll leave it at your door then. Thanks!
+protected: Thank you.

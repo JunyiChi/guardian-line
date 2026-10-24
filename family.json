@@ -1,0 +1,15 @@
+{
+  "seniorName": "Margaret",
+  "language": "en",
+  "childName": "David",
+  "childRelation": "son",
+  "familyMembers": ["David (son)", "Lisa (daughter-in-law)", "Kevin (grandson, 19, student at UCLA)"],
+  "bank": "Chase",
+  "clinics": ["Scripps Clinic La Jolla (Dr. Patel)"],
+  "pharmacy": "CVS on Genesee Ave",
+  "property": "Seaview Terrace apartments, unit 204",
+  "expectedDeliveries": ["Amazon package, due this week"],
+  "whitelistedOrgs": ["CVS", "Scripps", "Seaview Terrace management"],
+  "maxIntervention": "whisper_senior",
+  "allowKick": false
+}

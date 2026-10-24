@@ -62,7 +62,7 @@ bus.on('alert:sent', ({ callSid, channel }) => {
 bus.on('call:ended', ({ callSid }) => {
   const rec = store.get(callSid);
   if (!rec) return;
-  if (rec.status === 'flagged' && !callSid.startsWith('DEMO-') && !callSid.startsWith('TEST-')) {
+  if (rec.status === 'flagged' && !/^(DEMO|TEST|SIM)-/.test(callSid)) {
     const top = rec.risk.reduce((a, b) => (b.score > a.score ? b : a), rec.risk[0]);
     try {
       const kept = summaries.save({

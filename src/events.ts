@@ -11,7 +11,26 @@ export type RiskStatus = 'safe' | 'watching' | 'scam';
 /** The 6 signals Jev reports as probabilities. */
 export type JevSignal = 'urgency' | 'threat' | 'asks_for_codes_or_data' | 'asks_for_money' | 'impersonating_authority' | 'asks_for_secrecy';
 
-export type AlertChannel = 'voice' | 'sms' | 'whatsapp' | 'hangup';
+export type AlertChannel = 'voice' | 'sms' | 'whatsapp' | 'hangup' | 'senior-sms' | 'family-call' | 'kick';
+
+/** Where the call is on the scam trajectory. */
+export type Stage = 'none' | 'rapport' | 'pressure' | 'isolation' | 'extraction';
+
+/** Guardian additions to a risk-update / scam-detected: the trajectory model's view of the call. */
+export interface Guardian {
+  stage: Stage;
+  category: string;
+  /** What the caller wants the protected person to DO. */
+  requests: string[];
+  evidence: string[];
+  seniorSignals: string[];
+  /** Intervention level decided by the detector (already capped by the family's maxIntervention). */
+  action: 'none' | 'log' | 'notify_child_after_call' | 'notify_child_now' | 'whisper_senior';
+  summaryForChild: string;
+  whisperText: string;
+  /** One-sentence explanation in the call's language (same as risk-update.reason). */
+  reason: string;
+}
 
 /** Every event that flows between modules. Add new ones here. */
 export interface BusEvents {
@@ -39,10 +58,14 @@ export interface BusEvents {
     detector: 'jev' | 'llm'; status: RiskStatus;
     /** Jev only: score confidence, each signal's probability, the level label, response time and cost. */
     confidence?: number; probabilities?: Partial<Record<JevSignal, number>>; level?: string; ms?: number; cost?: number;
+    /** Guardian trajectory fields (LLM detector only). */
+    guardian?: Guardian;
   };
   /** The detector's warning rule fired (once per call). */
-  'scam-detected': { callSid: string; score: number; scamType: string; reason: string; signals: Signals; impersonating: string; detector: 'jev' | 'llm' };
+  'scam-detected': { callSid: string; score: number; scamType: string; reason: string; signals: Signals; impersonating: string; detector: 'jev' | 'llm'; guardian?: Guardian };
   'alert:sent': { callSid: string; channel: AlertChannel; message: string };
+  /** The protected person said the wake word ("Guardian, ...") during the call. */
+  'guardian:ask': { callSid: string; text: string };
 }
 
 type Key = keyof BusEvents;

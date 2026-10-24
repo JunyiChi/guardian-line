@@ -4,7 +4,7 @@ import { bus, BusEvents, Signals, Speaker } from '../events';
 import { SCAM_TYPE_LABEL } from '../detector/prompt';
 import { settings } from '../settings';
 import { maskNumber } from '../privacy/log';
-import { setupDemo } from './demo';
+import { setupDemo, setupLiveSim } from './demo';
 
 const forwarded: (keyof BusEvents)[] = [
   'call:ringing', 'call:started', 'call:ended', 'transcript-update', 'risk-update', 'scam-detected', 'alert:sent',
@@ -123,4 +123,5 @@ export function setupDashboard(io: Server, app: Express): void {
   });
 
   setupDemo(app);
+  setupLiveSim(app);
 }

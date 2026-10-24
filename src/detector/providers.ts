@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { GoogleGenAI } from '@google/genai';
 import type { z } from 'zod';
 import { config } from '../config';
@@ -63,11 +64,33 @@ async function anthropic(req: Request): Promise<string> {
     maxRetries: 0, // 429s are retried by withBackoff, the same way for every provider
   });
   const model = currentModel(req.tier);
+  const system = req.system.map((text, i) => ({
+    type: 'text' as const,
+    text,
+    ...(i === req.system.length - 1 ? { cache_control: { type: 'ephemeral' as const } } : {}),
+  }));
   try {
+    if (!model.startsWith('claude-haiku')) {
+      // Sonnet/Opus: server-side refusal fallback on (a declined check is re-run on a fallback model in the same call).
+      const res = await anthropicClient.beta.messages.create(
+        {
+          model,
+          max_tokens: 2048,
+          system,
+          messages: [{ role: 'user', content: req.user }],
+          output_config: { effort: 'low', format: betaZodOutputFormat(req.schema) },
+          betas: ['server-side-fallback-2026-07-01'],
+          fallbacks: 'default',
+        },
+        { timeout: TIMEOUT_MS[req.tier] },
+      );
+      if (res.stop_reason === 'refusal') throw new Error('model declined to score this transcript');
+      return res.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
+    }
     const res = await anthropicClient.messages.create(
       {
         model,
-        max_tokens: 1024,
+        max_tokens: 2048,
         // Both system blocks are identical across calls in a country, so they are cached
         // (the breakpoint on the last one caches everything before it).
         system: req.system.map((text, i) => ({
@@ -78,7 +101,8 @@ async function anthropic(req: Request): Promise<string> {
         messages: [{ role: 'user', content: req.user }],
         // Classification: low effort keeps latency down; the precise tier still thinks a little.
         output_config: { effort: 'low', format: zodOutputFormat(req.schema) },
-        ...(req.tier === 'fast' ? { thinking: { type: 'disabled' as const } } : {}),
+        // Only Haiku accepts thinking "disabled" at low effort; Sonnet/Opus 5.5 reject it (400), they just run adaptive.
+        ...(req.tier === 'fast' && model.startsWith('claude-haiku') ? { thinking: { type: 'disabled' as const } } : {}),
       },
       { timeout: TIMEOUT_MS[req.tier] },
     );

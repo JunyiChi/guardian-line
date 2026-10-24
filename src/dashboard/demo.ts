@@ -101,3 +101,52 @@ export function setupDemo(app: Express): void {
     res.json({ ok: true });
   });
 }
+
+// ---------------------------------------------------------------------------------------------
+// Guardian live simulation: replays a script through the REAL detector (SIM- call, Twilio mocked).
+// Used for testing without phones and as the stage fallback if telephony fails.
+//   POST /demo/live?script=scam-03-bank-fraud-department   (default: that script)
+// ---------------------------------------------------------------------------------------------
+const SCRIPTS_DIR = path.join(__dirname, '..', '..', 'data', 'test-scripts');
+const SIM_FROM = '+1 555 019 8800';
+let simRunning = false;
+
+async function runLive(scriptId: string, callSid: string): Promise<void> {
+  const file = path.join(SCRIPTS_DIR, `${scriptId}.txt`);
+  const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => {
+    const i = l.indexOf(':');
+    return { speaker: l.slice(0, i).trim() as Speaker, text: l.slice(i + 1).trim() };
+  });
+  const zh = lines.some((l) => /[一-鿿]/.test(l.text));
+  bus.emit('call:ringing', { callSid, from: SIM_FROM });
+  await sleep(1500);
+  bus.emit('call:started', { callSid, from: SIM_FROM });
+  await sleep(800);
+  for (const [i, { speaker, text }] of lines.entries()) {
+    const words = zh ? [...text] : text.split(' ');
+    const step = zh ? 120 : 350;
+    for (let w = 1; w < words.length; w += zh ? 3 : 1) {
+      bus.emit('transcript-update', { callSid, speaker, text: words.slice(0, w).join(zh ? '' : ' '), isFinal: false, language: zh ? 'zh' : 'en' });
+      await sleep(step);
+    }
+    bus.emit('transcript-update', { callSid, speaker, text, isFinal: true, endOfSpeech: true, language: zh ? 'zh' : 'en' });
+    log.info('sim', `line ${i + 1}/${lines.length} ${speaker}: ${text.slice(0, 60)}`);
+    await sleep(lines[i + 1]?.speaker === 'protected' ? 1200 : 2200);
+  }
+  await sleep(8000);
+  bus.emit('call:ended', { callSid });
+}
+
+export function setupLiveSim(app: Express): void {
+  app.post('/demo/live', (req, res) => {
+    const script = String(req.query.script ?? req.body?.script ?? 'scam-03-bank-fraud-department').replace(/[^a-z0-9-]/gi, '');
+    if (!fs.existsSync(path.join(SCRIPTS_DIR, `${script}.txt`))) return res.status(404).json({ ok: false, error: `no script ${script}` });
+    if (simRunning) return res.status(409).json({ ok: false, error: 'simulation already running' });
+    simRunning = true;
+    const callSid = `SIM-${Date.now()}`;
+    runLive(script, callSid)
+      .catch((err) => log.error('sim', err?.message ?? String(err)))
+      .finally(() => (simRunning = false));
+    res.json({ ok: true, script, callSid });
+  });
+}
