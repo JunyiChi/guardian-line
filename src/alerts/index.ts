@@ -27,6 +27,7 @@ const isDemoCall = (callSid: string) => config.publicDemo.enabled || /^(DEMO|SIM
 
 interface CallAlerts {
   level: number;
+  peak: number;
   last: Guardian | null;
   summary: string;
   whispers: number;
@@ -36,7 +37,7 @@ interface CallAlerts {
 const state = new Map<string, CallAlerts>();
 const stateOf = (callSid: string) => {
   let s = state.get(callSid);
-  if (!s) state.set(callSid, (s = { level: 0, last: null, summary: '', whispers: 0, familyCalled: false, askedAt: 0 }));
+  if (!s) state.set(callSid, (s = { level: 0, peak: 0, last: null, summary: '', whispers: 0, familyCalled: false, askedAt: 0 }));
   return s;
 };
 
@@ -240,6 +241,8 @@ export function setupAlerts(app: Express): void {
     log.error('alerts', `Google TTS failed: ${err.message}. Record public/audio/warning.mp3 yourself instead.`));
 
   bus.on('risk-update', async (u) => {
+    const st = stateOf(u.callSid);
+    st.peak = Math.max(st.peak, u.score);
     if (u.guardian) await escalate(u.callSid, u.guardian, u.score);
     else if (u.status === 'scam' && stateOf(u.callSid).level < 4) {
       // Jev / scripted demo path (no guardian fields): treat a detected scam as whisper level.
@@ -258,7 +261,7 @@ export function setupAlerts(app: Express): void {
     state.delete(callSid);
     if (!s || s.level < 2) return;
     const name = settings.get().protectedName;
-    const peak = store.get(callSid)?.risk.reduce((m, r) => Math.max(m, r.score), 0) ?? 0;
+    const peak = s.peak;
     const t = texts();
     await familySms(callSid, s.level >= 3 ? t.familyEnd(name, peak, s.summary) : t.familyAfter(name, s.summary));
   });

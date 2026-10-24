@@ -11,7 +11,8 @@ export type Provider = (typeof PROVIDERS)[number];
 export type Tier = 'fast' | 'precise';
 
 /** Must fit inside the 8s scoring tick (the precise check runs right after a fast one). */
-const TIMEOUT_MS = { fast: 6_000, precise: 12_000 } as const;
+/** Opus as the fast tier (through a proxy) regularly needs 5-8 s; Haiku stays snappy. */
+const TIMEOUT_MS = { fast: 15_000, precise: 20_000 } as const;
 const RATE_LIMIT_RETRIES = 4;
 const BACKOFF_BASE_MS = 1_000;
 const BACKOFF_MAX_MS = 15_000;
