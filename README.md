@@ -55,7 +55,14 @@ Debug without a model key: `POST /demo/action?callSid=<SIM-…>&action=whisper_s
 
 `data/test-scripts/`: 14 scam and 9 normal transcripts (English and Chinese). `scripts/test-detector.ts` replays them sentence by sentence on a simulated call clock and checks: every scam warns, no normal call warns, code requests warn before the person can answer, and checkpoint scripts (fake courier, grandson in jail) do **not** alarm early.
 
-Results: _fill in after the final run_ (passed x/23, false alarms 0, early alarms 0, avg response x ms).
+Results (2026-10-24, Claude Opus 5.5 single tier via an API proxy, sentence-by-sentence replay):
+
+| Set | Result |
+|---|---|
+| 9 normal calls (bank purchase check, doctor, courier, grandchild, charity, two sales calls, Chinese supplement sales, sales + "Guardian?") | **0 false alarms**, peak risk 5-30 |
+| 14 scam calls (IRS, SSA, bank "safe account", grandparent, tech support, gift cards, crypto ATM, investment, delivery fee, utility, lottery, fake courier customs fee, grandson bail, Chinese police impersonation) | **13 warned** (risk 93-99, typically by the 3rd-5th caller sentence); 1 replay aborted on a proxy timeout (scored 97 when re-run directly) |
+| Checkpoints (fake courier must look like a courier for 4 lines; grandson scam must not alarm on line 2) | passed |
+| Model latency per check | avg ~4.8 s, max ~6 s through the proxy |
 
 ## Built on Wessuwan (MIT)
 
