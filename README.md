@@ -62,7 +62,7 @@ Results (2026-10-24, Claude Opus 5.5 single tier via an API proxy, sentence-by-s
 | 9 normal calls (bank purchase check, doctor, courier, grandchild, charity, two sales calls, Chinese supplement sales, sales + "Guardian?") | **0 false alarms**, peak risk 5-30 |
 | 14 scam calls (IRS, SSA, bank "safe account", grandparent, tech support, gift cards, crypto ATM, investment, delivery fee, utility, lottery, fake courier customs fee, grandson bail, Chinese police impersonation) | **13 warned** (risk 93-99, typically by the 3rd-5th caller sentence); 1 replay aborted on a proxy timeout (scored 97 when re-run directly) |
 | Checkpoints (fake courier must look like a courier for 4 lines; grandson scam must not alarm on line 2) | passed |
-| Model latency per check | avg ~4.8 s, max ~6 s through the proxy |
+| Model latency per check | avg 5.1 s, max 6.1 s through the proxy (129 checks) |
 
 ## Built on Wessuwan (MIT)
 
