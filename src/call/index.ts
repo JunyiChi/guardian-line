@@ -6,7 +6,7 @@ import { bus } from '../events';
 import { config } from '../config';
 import { settings } from '../settings';
 import { log, maskNumber, shortSid } from '../privacy/log';
-import { createCall, dropBridge, endCall, ensureConferenceSid, getBridge, bridgeByName, kick, setBridge } from './twilio';
+import { callerLeft, createCall, dropBridge, endCall, ensureConferenceSid, getBridge, bridgeByName, kick, setBridge } from './twilio';
 import { getFamily } from '../config/family';
 
 /** Mandatory, always on, cannot be configured away. Spoken before any audio reaches the AI. */
@@ -69,10 +69,12 @@ export function mediaUpgradeAllowed(req: IncomingMessage): boolean {
 }
 
 /** Both legs end the conference when they leave, so neither party is ever left alone with silence. */
-function conferenceTwiml(name: string, _caller: boolean): string {
+function conferenceTwiml(name: string, caller: boolean): string {
   const cb = config.publicUrl ? ` statusCallback="${escapeXml(config.publicUrl)}/twilio/conference-status" statusCallbackEvent="start end join leave"` : '';
   // waitUrl="" = no hold music while the caller waits the few seconds until the protected person answers.
-  return `<Dial><Conference beep="false" waitUrl="" startConferenceOnEnter="true" endConferenceOnExit="true"${cb}>${escapeXml(name)}</Conference></Dial>`;
+  // The caller's leg does NOT end the conference (so it can be removed while the protected person stays
+  // with their family); callerLeft() ends the protected leg when the caller hangs up by themselves.
+  return `<Dial><Conference beep="false" waitUrl="" startConferenceOnEnter="true" endConferenceOnExit="${caller ? 'false' : 'true'}"${cb}>${escapeXml(name)}</Conference></Dial>`;
 }
 
 /** Dials the protected person into the caller's conference. Runs right after the webhook response is sent. */
@@ -189,6 +191,7 @@ export function setupCall(app: Express, wss: WebSocketServer): void {
       b.seniorJoined = true;
     }
     log.debug('call', `${shortSid(b.callerCallSid)}: conference ${event}${req.body?.CallSid ? ` (${shortSid(String(req.body.CallSid))})` : ''}`);
+    if (event === 'participant-leave' && leg === b.callerCallSid) callerLeft(b.callerCallSid);
     if (event === 'conference-end') dropBridge(b.callerCallSid);
   });
 
@@ -275,6 +278,7 @@ export function setupCall(app: Express, wss: WebSocketServer): void {
         bus.emit('call:audio', { callSid, speaker, payload: Buffer.from(msg.media.payload, 'base64') });
       } else if (msg.event === 'stop') {
         end();
+        callerLeft(callSid);
         setTimeout(() => dropBridge(callSid), 60_000).unref();
       }
     });

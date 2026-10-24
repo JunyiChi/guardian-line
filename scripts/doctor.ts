@@ -17,7 +17,7 @@ const E164 = /^\+[1-9]\d{6,14}$/;
 
 async function twilio(method: string, path: string, form?: Record<string, string>): Promise<any> {
   const { accountSid, authToken } = config.twilio;
-  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}${path}`, {
+  const res = await fetch(`${config.twilio.apiBase}/Accounts/${accountSid}${path}`, {
     method,
     headers: { Authorization: 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64') },
     body: form ? new URLSearchParams(form) : undefined,
@@ -72,6 +72,7 @@ async function main() {
   if (config.twilio.accountSid && config.twilio.authToken) {
     try {
       const acct = await twilio('GET', '.json');
+      if (!config.twilio.apiBase.includes('twilio.com')) ok(`Twilio-compatible API: ${config.twilio.apiBase}`);
       if (acct.type === 'Trial') bad('Twilio account is a TRIAL: outbound calls start with a "trial account" message. Upgrade before the demo.');
       else ok(`account ${acct.friendly_name} (${acct.type}, ${acct.status})`);
 
@@ -85,7 +86,7 @@ async function main() {
           await twilio('POST', `/IncomingPhoneNumbers/${n.sid}.json`, { VoiceUrl: want, VoiceMethod: 'POST' });
           ok(`voice webhook updated: ${n.voice_url || '(none)'} -> ${want}`);
         } else bad(`voice webhook is "${n.voice_url || '(none)'}", expected ${want}  (run: npm run doctor -- --fix-webhook)`);
-        if (!n.capabilities?.sms) warn('this number has no SMS capability: family and banner SMS will fail');
+        if (config.twilio.smsEnabled && !n.capabilities?.sms) warn('this number has no SMS capability: family and banner SMS will fail');
       }
 
       if (acct.type === 'Trial') {

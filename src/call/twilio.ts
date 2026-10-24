@@ -1,7 +1,7 @@
 import { config } from '../config';
 import { log, maskNumber, shortSid } from '../privacy/log';
 
-const API = 'https://api.twilio.com/2010-04-01';
+const API = () => config.twilio.apiBase;
 
 /** MOCK=true or PUBLIC_DEMO=true: Twilio actions (calls, SMS) are only logged, never sent. */
 export const isMock = () => process.env.MOCK === 'true' || config.publicDemo.enabled;
@@ -19,7 +19,7 @@ function escapeXml(s: string): string {
 export async function twilio(method: 'GET' | 'POST' | 'DELETE', path: string, form?: Record<string, string>): Promise<any> {
   const { accountSid, authToken } = config.twilio;
   if (!accountSid || !authToken) throw new Error('TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN not set');
-  const res = await fetch(`${API}/Accounts/${accountSid}${path}`, {
+  const res = await fetch(`${API()}/Accounts/${accountSid}${path}`, {
     method,
     headers: { Authorization: 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64') },
     body: form ? new URLSearchParams(form) : undefined,
@@ -44,6 +44,8 @@ export interface Bridge {
   seniorCallSid: string | null;
   seniorJoined: boolean;
   from: string;
+  /** Set before we remove the caller on purpose, so their leaving doesn't end the protected person's call. */
+  kicked?: boolean;
 }
 /** Keyed by the caller's CallSid, which is also the CallSid of the media stream / transcript / detector. */
 const bridges = new Map<string, Bridge>();
@@ -76,6 +78,8 @@ export async function announce(conferenceSid: string, participantCallSid: string
 
 /** Removes one participant (the caller) from the conference; the protected person stays connected. */
 export async function kick(conferenceSid: string, participantCallSid: string): Promise<void> {
+  const b = [...bridges.values()].find((x) => x.callerCallSid === participantCallSid);
+  if (b) b.kicked = true;
   // The caller's leg has endConferenceOnExit=true; clear it first or removing the caller ends the call for everyone.
   await twilio('POST', `/Conferences/${conferenceSid}/Participants/${participantCallSid}.json`, { EndConferenceOnExit: 'false' }).catch(() => undefined);
   await twilio('DELETE', `/Conferences/${conferenceSid}/Participants/${participantCallSid}.json`);
@@ -89,9 +93,25 @@ export async function ensureConferenceSid(b: Bridge): Promise<string | null> {
   return b.conferenceSid;
 }
 
-/** Ends one call leg. */
+/** Ends one call leg (a leg that is still ringing has to be canceled instead). */
 export async function endCall(callSid: string): Promise<void> {
-  await twilio('POST', `/Calls/${callSid}.json`, { Status: 'completed' });
+  try {
+    await twilio('POST', `/Calls/${callSid}.json`, { Status: 'completed' });
+  } catch {
+    await twilio('POST', `/Calls/${callSid}.json`, { Status: 'canceled' }).catch(() => undefined);
+  }
+}
+
+/**
+ * The caller left the conference. Unless we removed them on purpose (kick), end the protected person's
+ * leg too, so nobody is left alone in a silent call. Safe to call more than once.
+ */
+export function callerLeft(callerCallSid: string): void {
+  const b = getBridge(callerCallSid);
+  if (!b || b.kicked || !b.seniorCallSid || mock(callerCallSid)) return;
+  const leg = b.seniorCallSid;
+  b.seniorCallSid = null;
+  endCall(leg).catch(() => undefined);
 }
 
 /**
@@ -139,6 +159,10 @@ export async function playWarning(callSid: string, audioUrl: string): Promise<vo
 /** Sends one SMS or WhatsApp message. */
 /** Pass the call's callSid so alerts for DEMO-/TEST- calls are only logged, like the voice warning. */
 export async function sendMessage(to: string, body: string, channel: 'sms' | 'whatsapp', callSid?: string): Promise<void> {
+  if (channel === 'sms' && !config.twilio.smsEnabled) {
+    log.info('sms', `SMS disabled (SMS_ENABLED=false), not sent to ${maskNumber(to)}: ${body.slice(0, 80)}`);
+    throw new Error('SMS disabled');
+  }
   const from = channel === 'whatsapp' ? config.twilio.whatsappFrom : config.twilio.phoneNumber;
   if (isMock() || !config.twilio.accountSid || !config.twilio.authToken || !from || (callSid && /^(DEMO|TEST|SIM)-/.test(callSid))) {
     log.info('mock', `${channel} to ${maskNumber(to)} (not sent): ${body}`);

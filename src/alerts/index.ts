@@ -92,6 +92,10 @@ const texts = () => (baseLang(getFamily().language) === 'zh' ? T.zh : T.en);
 
 async function familySms(callSid: string, text: string): Promise<void> {
   const st = settings.get();
+  if (st.alertChannel === 'sms' && !config.twilio.smsEnabled) {
+    log.info('alerts', `${shortSid(callSid)}: family text skipped (SMS disabled): ${text.slice(0, 100)}`);
+    return;
+  }
   const numbers = st.familyNumbers.length ? st.familyNumbers : isDemoCall(callSid) ? [DEMO_FAMILY] : [];
   if (!numbers.length) return log.warn('alerts', 'no FAMILY_PHONE_NUMBERS configured: family alert skipped');
   const results = await Promise.allSettled(numbers.map((n) => sendMessage(n, text, st.alertChannel, callSid)));
@@ -123,6 +127,7 @@ async function familyCall(callSid: string, s: CallAlerts, summary: string): Prom
 
 async function seniorBanner(callSid: string): Promise<void> {
   const st = settings.get();
+  if (!config.twilio.smsEnabled) return; // the whisper is the protected person's channel
   const text = texts().seniorBanner(getFamily().childName);
   if (!st.protectedNumber && !isDemoCall(callSid)) return;
   try {

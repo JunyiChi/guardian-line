@@ -27,6 +27,13 @@ export const config = {
     phoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
     /** Sender for WhatsApp alerts, e.g. whatsapp:+14155238886 (Twilio sandbox). */
     whatsappFrom: process.env.TWILIO_WHATSAPP_FROM || '',
+    /**
+     * REST base. Twilio (default) or any Twilio-compatible API, e.g. SignalWire:
+     * https://<space>.signalwire.com/api/laml/2010-04-01  (ACCOUNT_SID = Project ID, AUTH_TOKEN = API token)
+     */
+    apiBase: (process.env.TWILIO_API_BASE || 'https://api.twilio.com/2010-04-01').replace(/\/+$/, ''),
+    /** US SMS needs A2P 10DLC registration (days). Off by default: all alerts are voice. */
+    smsEnabled: bool(process.env.SMS_ENABLED),
     /** Validate X-Twilio-Signature on webhooks (default on in production). */
     validateSignature: process.env.TWILIO_VALIDATE_SIGNATURE ? bool(process.env.TWILIO_VALIDATE_SIGNATURE) : production,
   },
