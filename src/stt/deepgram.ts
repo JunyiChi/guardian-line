@@ -74,6 +74,7 @@ export class DeepgramTrack {
     const ws = new WebSocket(`${URL}?${params}`, { headers: { Authorization: `Token ${config.stt.deepgramApiKey}` } });
     this.ws = ws;
     ws.on('open', () => {
+      log.info('stt', `deepgram ${shortSid(this.callSid)}/${this.speaker}: connected (${language()})`);
       this.retry = 500;
       for (const c of this.queue) ws.send(c);
       this.queue = [];
@@ -83,6 +84,7 @@ export class DeepgramTrack {
       let msg: any;
       try { msg = JSON.parse(data.toString()); } catch { return; }
       if (msg.type === 'UtteranceEnd') return void bus.emit('utterance-end', { callSid: this.callSid, speaker: this.speaker });
+      if (msg.type === 'Metadata' || msg.type === 'Error') return void log.debug('stt', `deepgram ${shortSid(this.callSid)}/${this.speaker}: ${msg.type} ${JSON.stringify(msg).slice(0, 160)}`);
       if (msg.type !== 'Results') return;
       const alt = msg.channel?.alternatives?.[0];
       const text: string = alt?.transcript?.trim() ?? '';
