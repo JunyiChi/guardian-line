@@ -73,7 +73,7 @@ async function main() {
     try {
       const acct = await twilio('GET', '.json');
       if (!config.twilio.apiBase.includes('twilio.com')) ok(`Twilio-compatible API: ${config.twilio.apiBase}`);
-      if (acct.type === 'Trial') bad('Twilio account is a TRIAL: outbound calls start with a "trial account" message. Upgrade before the demo.');
+      if (acct.type === 'Trial') warn(`TRIAL account (${acct.status}): every call starts with a trial message + "press any key"; only verified numbers can be called; ~75 voice minutes total, rehearse with "npm run sim"`);
       else ok(`account ${acct.friendly_name} (${acct.type}, ${acct.status})`);
 
       const nums = await twilio('GET', `/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(config.twilio.phoneNumber)}`);
@@ -92,7 +92,9 @@ async function main() {
       if (acct.type === 'Trial') {
         const ids = await twilio('GET', '/OutgoingCallerIds.json?PageSize=100');
         const verified = new Set((ids.outgoing_caller_ids ?? []).map((c: any) => c.phone_number));
-        for (const p of [config.protectedPerson.number, ...config.alerts.familyNumbers].filter(Boolean)) {
+        const callerPhone = process.env.DEMO_CALLER_NUMBER || '';
+        if (!callerPhone) warn('DEMO_CALLER_NUMBER not set: the phone playing the scammer may also need to be verified on a trial');
+        for (const p of [config.protectedPerson.number, ...config.alerts.familyNumbers, callerPhone].filter(Boolean)) {
           (verified.has(p) ? ok : bad)(`${p} ${verified.has(p) ? 'is a verified caller ID' : 'is NOT verified (trial accounts can only call verified numbers)'}`);
         }
       }
