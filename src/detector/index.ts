@@ -67,6 +67,12 @@ function parseModelOutput(text: string): ModelOutput {
 /** "Guardian, is this real?" said by the protected person mid-call. Loose on purpose: speech-to-text mangles names. */
 export const WAKE_WORD = /\b(guardian|gardian|guardean|guard[iy]an)\b|小卫|守护|卫士/i;
 
+/**
+ * Speech-to-text does not always flag the end of a sentence (speech_final / UtteranceEnd never came on a
+ * SignalWire stream). A final result with no further final within this gap is treated as a sentence end.
+ */
+const SENTENCE_GAP_MS = 900;
+
 const STAGE_RANK: Record<Stage, number> = { none: 0, rapport: 1, pressure: 2, isolation: 3, extraction: 4 };
 /** Lowest risk each action implies; the model's action is treated as a hard-rule signal. */
 const ACTION_FLOOR: Record<Action, number> = { none: 0, log: 0, notify_child_after_call: 46, notify_child_now: 71, whisper_senior: 85 };
@@ -201,6 +207,8 @@ interface CallState {
   retry: NodeJS.Timeout | null;
   /** Once "scam-detected" fired, the call's status never goes back down. */
   detected: boolean;
+  /** Guardian: a final transcript line not followed by another one within SENTENCE_GAP_MS counts as a sentence end. */
+  gap: NodeJS.Timeout | null;
   // ---- Jev
   prevScore: number | null;
   warnReason: string;
@@ -361,7 +369,7 @@ function sentenceEnded(callSid: string, state: CallState): void {
 
 function newState(mode: 'jev' | 'llm'): CallState {
   return {
-    mode, inFlight: false, pending: false, checkedLines: 0, partial: '', longSpeech: null, sentence: [], retry: null, detected: false,
+    mode, inFlight: false, pending: false, checkedLines: 0, partial: '', longSpeech: null, sentence: [], retry: null, detected: false, gap: null,
     prevScore: null, warnReason: '', failures: 0, backoffUntil: 0,
     tracker: new RiskTracker(), last: null,
     signalsSoFar: { urgency: false, threat: false, data_request: false, transfer_request: false },
@@ -393,7 +401,11 @@ export function setupDetector(): void {
       // Guardian: what the protected person says (reading a code, "I'll go to the bank now") is the strongest
       // escalation signal, so the end of their sentence triggers a check too.
       if (isFinal && WAKE_WORD.test(text)) bus.emit('guardian:ask', { callSid, text });
-      if (isFinal && endOfSpeech) void requestCheck(callSid, s);
+      if (isFinal) {
+        if (s.gap) clearTimeout(s.gap);
+        if (endOfSpeech) void requestCheck(callSid, s);
+        else s.gap = setTimeout(() => { s.gap = null; void requestCheck(callSid, s); }, SENTENCE_GAP_MS);
+      }
       return;
     }
     if (!isFinal) {
@@ -416,7 +428,9 @@ export function setupDetector(): void {
     if (s.longSpeech) clearTimeout(s.longSpeech);
     s.longSpeech = null;
     s.sentence.push(text);
+    if (s.gap) clearTimeout(s.gap);
     if (endOfSpeech) sentenceEnded(callSid, s);
+    else s.gap = setTimeout(() => { s.gap = null; if (s.sentence.length) sentenceEnded(callSid, s); }, SENTENCE_GAP_MS);
   });
 
   // Deepgram UtteranceEnd: the sentence ended even though endpointing never marked it (background noise).
@@ -430,6 +444,7 @@ export function setupDetector(): void {
     const state = calls.get(callSid);
     if (state?.longSpeech) clearTimeout(state.longSpeech);
     if (state?.retry) clearTimeout(state.retry);
+    if (state?.gap) clearTimeout(state.gap);
     calls.delete(callSid);
   });
 }
