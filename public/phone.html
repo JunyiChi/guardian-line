@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Guardian Phone</title>
+  <style>
+    :root { --bg: #0e1116; --fg: #f3f4f6; --muted: #9aa3af; --card: #171b22; --green: #22c55e; --red: #ef4444; --gold: #f5c451; }
+    @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: #f5f6f8; --fg: #111827; --muted: #6b7280; --card: #ffffff; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--fg); font: 17px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: flex; flex-direction: column; align-items: center; padding: 28px 16px calc(28px + env(safe-area-inset-bottom)); }
+    .role { font-size: .8em; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    h1 { margin: 6px 0 2px; font-size: 1.7em; text-align: center; }
+    .status { color: var(--muted); min-height: 1.4em; text-align: center; }
+    .timer { font-variant-numeric: tabular-nums; color: var(--muted); min-height: 1.4em; }
+    .avatar { width: 112px; height: 112px; border-radius: 50%; background: var(--card); display: grid; place-items: center; font-size: 52px; margin: 26px 0 14px; }
+    .avatar.ringing { animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 18px rgba(34,197,94,.18); } }
+    .buttons { margin-top: auto; display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; width: 100%; max-width: 360px; }
+    button { border: 0; border-radius: 999px; min-width: 76px; height: 76px; padding: 0 22px; font-size: 1em; font-weight: 600; color: #fff; cursor: pointer; }
+    button.green { background: var(--green); } button.red { background: var(--red); } button.gray { background: #4b5563; }
+    button.wide { border-radius: 18px; width: 100%; height: 64px; }
+    button:disabled { opacity: .4; }
+    .caption { margin: 18px 0 0; max-width: 360px; text-align: center; font-size: .9em; color: var(--gold); min-height: 2.6em; }
+    .summary { background: var(--card); border-radius: 14px; padding: 14px 16px; max-width: 360px; margin-top: 12px; font-size: .95em; display: none; }
+    .online { margin-top: 18px; font-size: .75em; color: var(--muted); }
+    .online b { font-weight: 600; } .online .on { color: var(--green); } .online .off { color: var(--red); }
+    .start { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px; text-align: center; z-index: 5; }
+    .start button { width: 100%; max-width: 320px; }
+  </style>
+</head>
+<body>
+  <div class="start" id="start">
+    <div class="role" id="startRole"></div>
+    <h1 id="startTitle">Guardian Phone</h1>
+    <p class="status">Tap once to enable the microphone and sound. Earbuds recommended.</p>
+    <button class="green wide" id="startBtn">Start</button>
+  </div>
+
+  <div class="role" id="role"></div>
+  <h1 id="title"></h1>
+  <div class="status" id="status">Connecting…</div>
+  <div class="timer" id="timer"></div>
+  <div class="avatar" id="avatar">📱</div>
+  <div class="summary" id="summary"></div>
+  <p class="caption" id="caption"></p>
+  <div class="buttons" id="buttons"></div>
+  <div class="online" id="online"></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const role = (new URLSearchParams(location.search).get('role') || 'senior').toLowerCase();
+  const ROLE_LABEL = { caller: 'Unknown caller', senior: 'Protected person', family: 'Family' };
+  const RATE = 8000;
+  let ws, ctx, proc, mic, sending = false, muted = false, startedAt = 0, ringTimer = null, seniorName = 'Margaret', childName = 'David';
+  const nextTime = [0, 0, 0];
+
+  $('role').textContent = $('startRole').textContent = ROLE_LABEL[role] || role;
+
+  // ---- G.711 mu-law -------------------------------------------------------------------------
+  function enc(s) {
+    const BIAS = 0x84, CLIP = 32635;
+    let sign = (s >> 8) & 0x80;
+    if (sign) s = -s;
+    if (s > CLIP) s = CLIP;
+    s += BIAS;
+    let exp = 7;
+    for (let mask = 0x4000; (s & mask) === 0 && exp > 0; exp--, mask >>= 1) {}
+    const mant = (s >> (exp + 3)) & 0x0f;
+    return ~(sign | (exp << 4) | mant) & 0xff;
+  }
+  function dec(u) {
+    u = ~u & 0xff;
+    const sign = u & 0x80, exp = (u >> 4) & 7, mant = u & 0x0f;
+    let s = ((mant << 3) + 0x84) << exp;
+    s -= 0x84;
+    return sign ? -s : s;
+  }
+
+  // ---- audio in: mic -> 8 kHz mu-law -> server ---------------------------------------------
+  let carry = 0;
+  async function startAudio() {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    await ctx.resume();
+    mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
+    const src = ctx.createMediaStreamSource(mic);
+    proc = ctx.createScriptProcessor(2048, 1, 1);
+    const ratio = ctx.sampleRate / RATE;
+    proc.onaudioprocess = (e) => {
+      const out = e.outputBuffer.getChannelData(0); out.fill(0);
+      if (!sending || muted || !ws || ws.readyState !== 1) return;
+      const input = e.inputBuffer.getChannelData(0);
+      const n = Math.floor((input.length - carry) / ratio);
+      const bytes = new Uint8Array(n);
+      for (let i = 0; i < n; i++) {
+        const a = Math.floor(carry + i * ratio), b = Math.min(input.length, Math.floor(carry + (i + 1) * ratio));
+        let sum = 0; for (let j = a; j < b; j++) sum += input[j];
+        const v = Math.max(-1, Math.min(1, sum / Math.max(1, b - a)));
+        bytes[i] = enc(Math.round(v * 32767));
+      }
+      carry = (carry + n * ratio) - input.length; if (carry < 0) carry = 0;
+      ws.send(bytes);
+    };
+    src.connect(proc); proc.connect(ctx.destination);
+    // iOS: speech synthesis must be unlocked by a gesture.
+    try { speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch {}
+  }
+
+  // ---- audio out: server -> per-source jitter buffer -----------------------------------------
+  function play(data) {
+    const src = data[0];
+    const n = data.length - 1;
+    if (!ctx || n <= 0) return;
+    const buf = ctx.createBuffer(1, n, RATE);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) ch[i] = dec(data[i + 1]) / 32768;
+    const node = ctx.createBufferSource();
+    node.buffer = buf; node.connect(ctx.destination);
+    const now = ctx.currentTime;
+    if (nextTime[src] < now + 0.04 || nextTime[src] > now + 0.6) nextTime[src] = now + 0.08;
+    node.start(nextTime[src]);
+    nextTime[src] += buf.duration;
+  }
+
+  // ---- ringtone + speech ---------------------------------------------------------------------
+  function ring(on) {
+    clearInterval(ringTimer); ringTimer = null;
+    if (!on || !ctx) return;
+    const burst = () => {
+      [440, 480].forEach((f) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = f; g.gain.value = 0.08;
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 1.6);
+      });
+    };
+    burst(); ringTimer = setInterval(burst, 3500);
+  }
+  function speak(text, lang, then) {
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = (lang || 'en').startsWith('zh') ? 'zh-CN' : 'en-US';
+      u.rate = 0.95;
+      u.onend = u.onerror = () => then && then();
+      speechSynthesis.speak(u);
+    } catch { then && then(); }
+  }
+
+  // ---- UI -----------------------------------------------------------------------------------
+  function btn(label, cls, onClick) { const b = document.createElement('button'); b.className = cls; b.textContent = label; b.onclick = onClick; return b; }
+  function setButtons(...bs) { $('buttons').replaceChildren(...bs); }
+  const sendJ = (o) => ws && ws.readyState === 1 && ws.send(JSON.stringify(o));
+  function view(state, extra = {}) {
+    $('avatar').classList.toggle('ringing', state === 'incoming' || state === 'ring');
+    if (role === 'caller') {
+      $('title').textContent = 'Call ' + seniorName;
+      if (state === 'idle') { $('status').textContent = 'Ready'; $('avatar').textContent = '🕵️'; setButtons(btn('Call', 'green', () => sendJ({ type: 'dial' }))); }
+      if (state === 'ringing') { $('status').textContent = 'Ringing…'; setButtons(btn('Cancel', 'red', () => sendJ({ type: 'hangup' }))); }
+      if (state === 'connected') { $('status').textContent = 'Connected'; setButtons(btn('Hang up', 'red', () => sendJ({ type: 'hangup' }))); }
+    }
+    if (role === 'senior') {
+      $('title').textContent = seniorName + "'s phone";
+      if (state === 'idle') { $('status').textContent = 'Waiting for calls'; $('avatar').textContent = '👵'; setButtons(); }
+      if (state === 'incoming') { $('status').textContent = 'Incoming call · ' + (extra.from || 'Unknown number'); setButtons(btn('Decline', 'red', () => sendJ({ type: 'hangup' })), btn('Answer', 'green', () => sendJ({ type: 'answer' }))); }
+      if (state === 'connected') { $('status').textContent = 'On a call'; setButtons(btn('Hang up', 'red', () => sendJ({ type: 'hangup' }))); }
+    }
+    if (role === 'family') {
+      $('title').textContent = childName;
+      if (state === 'idle') { $('status').textContent = 'Guardian is looking after ' + seniorName + "'s calls"; $('avatar').textContent = '🧑'; $('summary').style.display = 'none'; setButtons(); }
+      if (state === 'ring') {
+        $('status').textContent = 'Guardian is calling'; $('avatar').textContent = '🛡️';
+        $('summary').style.display = 'block'; $('summary').textContent = extra.summary || '';
+        setButtons(btn('1 · Join the call', 'green wide', () => choose('1')), btn('2 · Disconnect the caller', 'red wide', () => choose('2')));
+      }
+      if (state === 'joined') { $('status').textContent = 'In the call with ' + seniorName; setButtons(btn('Leave', 'red', () => sendJ({ type: 'hangup' }))); }
+    }
+  }
+  function choose(d) { ring(false); speechSynthesis.cancel(); sendJ({ type: 'family', choice: d }); }
+  document.addEventListener('keydown', (e) => { if (role === 'family' && (e.key === '1' || e.key === '2')) choose(e.key); });
+
+  setInterval(() => {
+    if (!startedAt) { $('timer').textContent = ''; return; }
+    const s = Math.floor((Date.now() - startedAt) / 1000);
+    $('timer').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  }, 500);
+
+  // ---- signalling ---------------------------------------------------------------------------
+  function connect() {
+    ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/webphone?role=${role}`);
+    ws.binaryType = 'arraybuffer';
+    ws.onopen = () => view('idle');
+    ws.onclose = () => { sending = false; $('status').textContent = 'Reconnecting…'; setTimeout(connect, 1500); };
+    ws.onmessage = (e) => {
+      if (typeof e.data !== 'string') return play(new Uint8Array(e.data));
+      const m = JSON.parse(e.data);
+      if (m.type === 'state') {
+        seniorName = m.seniorName || seniorName; childName = m.childName || childName;
+        const o = m.online;
+        $('online').innerHTML = ['caller', 'senior', 'family'].map((r) => `<b class="${o[r] ? 'on' : 'off'}">●</b> ${ROLE_LABEL[r]}`).join(' &nbsp; ');
+        if (!m.call && !sending && !ringTimer) view('idle');
+      }
+      if (m.type === 'ringing') view('ringing');
+      if (m.type === 'incoming') { view('incoming', m); ring(true); }
+      if (m.type === 'connected') {
+        ring(false); startedAt = Date.now(); view('connected'); $('caption').textContent = '';
+        if (role === 'caller' && m.notice) { muted = true; speak(m.notice, 'en', () => { muted = false; }); }
+        sending = true;
+      }
+      if (m.type === 'whisper' && role === 'senior') {
+        // The whisper is spoken only here; the mic pauses so the caller cannot hear it.
+        muted = true;
+        $('caption').textContent = '🛡️ Guardian (only you hear this): ' + m.text;
+        speak(m.text, m.lang, () => { muted = false; });
+      }
+      if (m.type === 'notice' && role === 'senior') {
+        if (m.text === 'family-joined') $('caption').textContent = '🧑 ' + childName + ' joined the call';
+        if (m.text === 'caller-dropped') $('caption').textContent = 'The caller was disconnected';
+      }
+      if (m.type === 'ring' && role === 'family') {
+        view('ring', m); ring(true);
+        setTimeout(() => { if (ringTimer) { ring(false); speak(`Guardian alert. ${m.seniorName || seniorName} is on a call that looks like a scam. ${m.summary || ''} Press 1 to join the call. Press 2 to disconnect the caller.`, m.lang); } }, 2500);
+      }
+      if (m.type === 'joined') { ring(false); startedAt = Date.now(); view('joined'); sending = true; }
+      if (m.type === 'ended') {
+        ring(false); sending = false; startedAt = 0; speechSynthesis.cancel();
+        const why = { busy: 'Line busy', unreachable: seniorName + "'s phone is offline", disconnected: 'Call ended by Guardian', left: 'You left the call' }[m.reason] || 'Call ended';
+        $('status').textContent = why; setTimeout(() => view('idle'), 2500);
+      }
+    };
+  }
+
+  $('startBtn').onclick = async () => {
+    try { await startAudio(); } catch (err) { alert('Microphone not available: ' + err.message + '\nOpen this page over https (the tunnel URL).'); return; }
+    $('start').remove();
+    connect();
+  };
+})();
+</script>
+</body>
+</html>

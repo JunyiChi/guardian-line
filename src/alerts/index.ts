@@ -8,6 +8,7 @@ import { WARNING_TEXT, baseLang, ensureWarningAudio } from './tts';
 import { SCAM_TYPE_LABEL, ScamType } from '../detector/prompt';
 import { ACTION_RANK, Action, getFamily } from '../config/family';
 import { log, maskNumber, shortSid } from '../privacy/log';
+import { isWebCall, webDropCaller, webRingFamily } from '../webphone';
 
 /**
  * Guardian intervention policy. Driven by the detector's `action` on every risk-update:
@@ -111,6 +112,11 @@ async function familyCall(callSid: string, s: CallAlerts, summary: string): Prom
   const st = settings.get();
   const to = st.familyNumbers[0];
   const msg = `Family call placed (press 1 join / 2 drop caller)`;
+  if (isWebCall(callSid)) {
+    if (webRingFamily(callSid, summary)) record(callSid, 'family-call', msg);
+    else log.warn('alerts', `${shortSid(callSid)}: family web phone is offline`);
+    return;
+  }
   if (!to || isMockCall(callSid)) {
     log.info('mock', `${shortSid(callSid)}: would call family ${to ? maskNumber(to) : '(none set)'} with the 1/2 menu`);
     record(callSid, 'family-call', msg);
@@ -152,6 +158,10 @@ async function whisperSenior(callSid: string, s: CallAlerts, text: string): Prom
 
 async function dropCaller(callSid: string): Promise<void> {
   const b = getBridge(callSid);
+  if (isWebCall(callSid)) {
+    webDropCaller(callSid);
+    return;
+  }
   if (isMockCall(callSid)) {
     log.info('mock', `${shortSid(callSid)}: would remove the caller from the conference`);
     record(callSid, 'kick', 'Caller removed from the call');

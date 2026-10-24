@@ -14,6 +14,7 @@ import { setupAlerts } from './alerts';
 import { setupDashboard } from './dashboard';
 import { setupTryIt } from './tryit';
 import { setupSetup } from './setup';
+import { setupWebPhone } from './webphone';
 import { settings } from './settings';
 import { startRetention } from './privacy/summaries';
 import { encryptionKey } from './privacy/crypto';
@@ -65,7 +66,9 @@ const io = new SocketIOServer(server);
 
 // Raw WebSocket for Twilio media streams on /media (signature-checked like the webhooks).
 const wss = new WebSocketServer({ noServer: true });
+const webPhoneUpgrade = setupWebPhone();
 server.on('upgrade', (req, socket, head) => {
+  if (webPhoneUpgrade(req, socket, head)) return;
   if (!req.url?.startsWith('/media')) return;
   if (!mediaUpgradeAllowed(req)) {
     log.warn('security', 'rejected media stream: invalid Twilio signature');

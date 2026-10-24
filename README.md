@@ -43,6 +43,12 @@ npm run test:detector -- --detector=llm --provider=anthropic   # replay all scri
 npm run sim scam-13-grandson-bail                              # live simulation through the real detector (Twilio mocked)
 ```
 
+**Web phone (no telephony account needed).** Open the tunnel URL on three phones, earbuds in:
+`/phone?role=senior`, `/phone?role=caller`, `/phone?role=family`. Tap Start on each, then Call from the caller phone.
+Audio is relayed as 8 kHz mu-law through the same speech-to-text, detector and intervention pipeline as a real call;
+the whisper is spoken only on the senior phone (its microphone pauses meanwhile), the family phone rings with the 1/2 menu.
+Production uses carrier call forwarding into the Twilio conference path in `src/call/`.
+
 Debug without a model key: `POST /demo/action?callSid=<SIM-…>&action=whisper_senior` forces an intervention level.
 
 ## Test scripts

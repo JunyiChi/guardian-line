@@ -1,5 +1,6 @@
 import { config } from '../config';
 import { log, maskNumber, shortSid } from '../privacy/log';
+import { isWebCall, webWhisper } from '../webphone';
 
 const API = () => config.twilio.apiBase;
 
@@ -125,6 +126,11 @@ export async function whisper(callSid: string, opts: { text?: string; play?: str
   if (opts.play) q.set('play', opts.play);
   if (opts.lang) q.set('lang', opts.lang);
   const url = `${config.publicUrl}/twilio/whisper?${q}`;
+  if (isWebCall(callSid)) {
+    if (opts.text && webWhisper(callSid, opts.text, opts.lang ?? 'en')) return 'announce';
+    log.warn('webphone', `${shortSid(callSid)}: whisper not delivered (no text or senior phone offline)`);
+    return 'announce';
+  }
   if (mock(callSid)) {
     log.info('mock', `${shortSid(callSid)}: would whisper to the protected person: ${opts.text ?? opts.play}`);
     return 'announce';
