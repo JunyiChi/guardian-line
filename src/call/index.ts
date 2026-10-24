@@ -93,7 +93,6 @@ async function dialSenior(callerCallSid: string, conf: string, protectedNumber: 
       to: protectedNumber,
       url: `${config.publicUrl}/twilio/join?conf=${q}`,
       statusCallback: `${config.publicUrl}/twilio/join-status?caller=${encodeURIComponent(callerCallSid)}`,
-      statusCallbackEvent: 'answered completed',
       timeoutSec: 20,
     });
     log.info('call', `${shortSid(callerCallSid)}: dialing protected person (${shortSid(b.seniorCallSid)}) into ${conf}`);

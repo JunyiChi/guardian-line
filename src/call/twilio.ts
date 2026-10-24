@@ -64,10 +64,10 @@ export async function createCall(params: { to: string; url: string; statusCallba
     Url: params.url,
     Timeout: String(params.timeoutSec ?? 20),
   };
-  if (params.statusCallback) {
-    form.StatusCallback = params.statusCallback;
-    form.StatusCallbackEvent = params.statusCallbackEvent ?? 'answered completed';
-  }
+  // StatusCallback fires on "completed" by default on Twilio and SignalWire. We don't pass
+  // StatusCallbackEvent: SignalWire rejects Twilio's space-separated list (21626), and "answered"
+  // is learned from the conference participant-join callback anyway.
+  if (params.statusCallback) form.StatusCallback = params.statusCallback;
   const r = await twilio('POST', '/Calls.json', form);
   return r.sid as string;
 }
