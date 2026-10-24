@@ -74,7 +74,7 @@ export async function createCall(params: { to: string; url: string; statusCallba
 
 /** Plays the TwiML at announceUrl to one conference participant only (the whisper). */
 export async function announce(conferenceSid: string, participantCallSid: string, announceUrl: string): Promise<void> {
-  await twilio('POST', `/Conferences/${conferenceSid}/Participants/${participantCallSid}.json`, { AnnounceUrl: announceUrl, AnnounceMethod: 'GET' });
+  await twilio('POST', `/Conferences/${conferenceSid}/Participants/${participantCallSid}.json`, { AnnounceUrl: announceUrl });
 }
 
 /** Removes one participant (the caller) from the conference; the protected person stays connected. */
@@ -148,7 +148,7 @@ export async function whisper(callSid: string, opts: { text?: string; play?: str
     return 'announce';
   }
   const leg = (await protectedLeg(callSid)) ?? callSid;
-  await twilio('POST', `/Calls/${leg}.json`, { Twiml: `<Response><Redirect method="GET">${escapeXml(url)}</Redirect></Response>` });
+  await twilio('POST', `/Calls/${leg}.json`, { Twiml: `<Response><Redirect>${escapeXml(url)}</Redirect></Response>` });
   return 'redirect';
 }
 

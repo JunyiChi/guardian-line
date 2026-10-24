@@ -76,7 +76,7 @@ function conferenceTwiml(name: string, caller: boolean): string {
   const wait = config.publicUrl ? `${escapeXml(config.publicUrl)}/twilio/wait` : '';
   // The caller's leg does NOT end the conference (so it can be removed while the protected person stays
   // with their family); callerLeft() ends the protected leg when the caller hangs up by themselves.
-  return `<Dial><Conference beep="false" waitUrl="${wait}" waitMethod="GET" startConferenceOnEnter="true" endConferenceOnExit="${caller ? 'false' : 'true'}"${cb}>${escapeXml(name)}</Conference></Dial>`;
+  return `<Dial><Conference beep="false" waitUrl="${wait}" startConferenceOnEnter="true" endConferenceOnExit="${caller ? 'false' : 'true'}"${cb}>${escapeXml(name)}</Conference></Dial>`;
 }
 
 /** Dials the protected person into the caller's conference. Runs right after the webhook response is sent. */
@@ -198,7 +198,7 @@ export function setupCall(app: Express, wss: WebSocketServer): void {
 
   /** Conference wait music: silence. */
   app.all('/twilio/wait', (_req, res) => {
-    res.type('text/xml').send('<Response><Pause length="20"/><Redirect method="GET">' + escapeXml(`${config.publicUrl}/twilio/wait`) + '</Redirect></Response>');
+    res.type('text/xml').send('<Response><Pause length="20"/><Redirect>' + escapeXml(`${config.publicUrl}/twilio/wait`) + '</Redirect></Response>');
   });
 
   /** The family member answered our alert call: summary + keypad menu. */
@@ -232,7 +232,7 @@ export function setupCall(app: Express, wss: WebSocketServer): void {
     }
     // Family leg never ends the conference when it leaves.
     const wait = config.publicUrl ? `${escapeXml(config.publicUrl)}/twilio/wait` : '';
-    const join = `<Dial><Conference beep="false" waitUrl="${wait}" waitMethod="GET" startConferenceOnEnter="true" endConferenceOnExit="false">${escapeXml(b.name)}</Conference></Dial>`;
+    const join = `<Dial><Conference beep="false" waitUrl="${wait}" startConferenceOnEnter="true" endConferenceOnExit="false">${escapeXml(b.name)}</Conference></Dial>`;
     if (digit === '2') {
       const conf = await ensureConferenceSid(b).catch(() => null);
       if (conf) {
