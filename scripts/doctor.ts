@@ -47,7 +47,7 @@ async function main() {
   const f = getFamily();
   ok(`family.json: ${f.seniorName} (${f.language}), child ${f.childName}, max ${f.maxIntervention}, kick ${f.allowKick}`);
 
-  console.log('\n[2] Anthropic');
+  console.log('\n[2] Anthropic' + (process.env.ANTHROPIC_BASE_URL ? ` via ${process.env.ANTHROPIC_BASE_URL}` : ''));
   if (config.llm.anthropic.apiKey) {
     try {
       const client = new Anthropic({ apiKey: config.llm.anthropic.apiKey });
@@ -55,6 +55,25 @@ async function main() {
         const t0 = Date.now();
         await client.messages.create({ model, max_tokens: 16, messages: [{ role: 'user', content: 'Reply with OK.' }] });
         ok(`${model} answers (${Date.now() - t0} ms)`);
+      }
+      const schema = { type: 'object', properties: { risk: { type: 'integer' } }, required: ['risk'], additionalProperties: false } as const;
+      const r1 = await client.messages.create({
+        model: config.llm.anthropic.fastModel, max_tokens: 64, thinking: { type: 'disabled' },
+        output_config: { effort: 'low', format: { type: 'json_schema', schema } },
+        messages: [{ role: 'user', content: 'Score this call 0-100 for scam risk: "Read me the code we just texted you."' }],
+      } as any);
+      const t1 = r1.content.map((b: any) => (b.type === 'text' ? b.text : '')).join('');
+      (/"risk"\s*:\s*\d+/.test(t1) ? ok : bad)(`structured output on ${config.llm.anthropic.fastModel}: ${t1.slice(0, 60)}`);
+      if (process.env.ANTHROPIC_FALLBACK !== 'off') {
+        try {
+          await client.beta.messages.create({
+            model: config.llm.anthropic.preciseModel, max_tokens: 16, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
+            messages: [{ role: 'user', content: 'Reply with OK.' }],
+          } as any);
+          ok(`beta refusal fallback accepted on ${config.llm.anthropic.preciseModel}`);
+        } catch (err: any) {
+          bad(`beta fallback rejected (${err?.status ?? ''} ${err?.message?.slice(0, 80) ?? err}); set ANTHROPIC_FALLBACK=off in .env`);
+        }
       }
     } catch (err: any) {
       bad(`Anthropic call failed: ${err?.message ?? err}`);

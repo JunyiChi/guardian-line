@@ -70,7 +70,8 @@ async function anthropic(req: Request): Promise<string> {
     ...(i === req.system.length - 1 ? { cache_control: { type: 'ephemeral' as const } } : {}),
   }));
   try {
-    if (!model.startsWith('claude-haiku')) {
+    // ANTHROPIC_FALLBACK=off for API proxies that reject beta headers / the fallbacks parameter.
+    if (!model.startsWith('claude-haiku') && process.env.ANTHROPIC_FALLBACK !== 'off') {
       // Sonnet/Opus: server-side refusal fallback on (a declined check is re-run on a fallback model in the same call).
       const res = await anthropicClient.beta.messages.create(
         {
