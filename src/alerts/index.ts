@@ -71,9 +71,9 @@ const T = {
     familyEnd: (name: string, score: number, summary: string) => `Guardian: ${name}'s call has ended. Peak risk ${score}/100. ${summary}`,
     seniorBanner: (child: string) => `Guardian: this call may be a scam. Do not share any codes and do not send money. ${child} has been told and will call you.`,
     whisperDefault: (name: string, child: string) => `${name}, this call is a scam. Please hang up now. ${child} is calling you right away.`,
-    askNone: (child: string) => `I haven't heard anything wrong yet. Keep talking, I'm here. Just say my name again if you want me to check.`,
-    askLow: (reason: string) => `${reason} They haven't asked you for money or any information. It's your call.`,
-    askMid: (reason: string, asks: string) => `Be careful. ${reason} They want you to ${asks}. You don't have to decide anything on this call.`,
+    askNone: (_child: string) => `Nothing wrong so far. Keep talking, I am here.`,
+    askLow: (reason: string) => `${reason} No money or information has been asked of you. Your call.`,
+    askMid: (reason: string, asks: string) => `Be careful. ${reason} They want you to ${asks}. You do not have to decide anything on this call.`,
     familyCall: (name: string, summary: string) => `Guardian alert. ${name} is on a call that looks like a scam. ${summary} Press 1 to join the call now. Press 2 to disconnect the caller and talk to ${name}.`,
   },
   zh: {

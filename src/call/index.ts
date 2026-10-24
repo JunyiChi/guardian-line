@@ -26,9 +26,14 @@ const VOICES: Record<string, { voice: string; language: string }> = {
   es: { voice: 'Polly.Lupe-Neural', language: 'es-US' },
   ja: { voice: 'Polly.Kazuha-Neural', language: 'ja-JP' },
 };
+/** Text for <Say>: no entity escapes beyond & < > (SignalWire's parser chokes on &apos;), no quotes, one line. */
+function spoken(text: string): string {
+  return text.replace(/["\u201c\u201d]/g, '').replace(/['\u2018\u2019]/g, '\u2019').replace(/\s+/g, ' ').trim()
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 export function sayTwiml(text: string, lang?: string): string {
   const v = VOICES[(lang ?? getFamily().language).split('-')[0]] ?? VOICES.en;
-  return `<Say voice="${v.voice}" language="${v.language}">${escapeXml(text)}</Say>`;
+  return `<Say voice="${v.voice}" language="${v.language}">${spoken(text)}</Say>`;
 }
 
 function escapeXml(s: string): string {
@@ -260,6 +265,7 @@ export function setupCall(app: Express, wss: WebSocketServer): void {
     const play = String(req.query.play ?? '');
     const lang = req.query.lang ? String(req.query.lang) : undefined;
     const body = play ? `<Play>${escapeXml(play)}</Play>` : text ? sayTwiml(text, lang) : '';
+    log.info('whisper', `provider fetched whisper TwiML (${req.method}): ${play || text.slice(0, 80)}`);
     res.type('text/xml').send(`<Response>${body}</Response>`);
   });
 
