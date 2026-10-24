@@ -266,6 +266,10 @@ export function setupCall(app: Express, wss: WebSocketServer): void {
   wss.on('connection', (ws) => {
     let callSid = '';
     let ended = false;
+    let frames = 0;
+    log.info('media', 'media stream socket connected');
+    const stats = setInterval(() => { if (callSid) log.debug('media', `${shortSid(callSid)}: ${frames} audio frames in the last 5s`); frames = 0; }, 5000);
+    ws.on('close', () => clearInterval(stats));
     const end = () => {
       if (!callSid || ended) return;
       ended = true;
@@ -274,16 +278,21 @@ export function setupCall(app: Express, wss: WebSocketServer): void {
     ws.on('message', (raw) => {
       let msg: any;
       try { msg = JSON.parse(raw.toString()); } catch { return; }
+      if (msg.event === 'connected') return log.info('media', `stream protocol ${msg.protocol ?? '?'} ${msg.version ?? ''}`);
       if (msg.event === 'start') {
-        callSid = msg.start.callSid;
+        callSid = msg.start?.callSid ?? msg.start?.call_sid ?? '';
+        log.info('media', `${shortSid(callSid)}: stream started, tracks ${JSON.stringify(msg.start?.tracks ?? '?')}, format ${JSON.stringify(msg.start?.mediaFormat ?? '?')}`);
+        if (!callSid) log.error('media', `stream start without callSid: ${JSON.stringify(msg).slice(0, 300)}`);
         bus.emit('call:started', { callSid, from: msg.start.customParameters?.from ?? 'unknown' });
       } else if (msg.event === 'media' && callSid) {
+        frames++;
         // With <Stream track="both_tracks">: inbound = the caller, outbound = what Twilio plays back
         // to the caller, i.e. the protected person's voice from the <Dial> leg.
         // Audio is passed along in memory only; it is never written to disk or logged.
         const speaker = msg.media.track === 'outbound' ? 'protected' : 'caller';
         bus.emit('call:audio', { callSid, speaker, payload: Buffer.from(msg.media.payload, 'base64') });
       } else if (msg.event === 'stop') {
+        log.info('media', `${shortSid(callSid)}: stream stopped`);
         end();
         callerLeft(callSid);
         setTimeout(() => dropBridge(callSid), 60_000).unref();

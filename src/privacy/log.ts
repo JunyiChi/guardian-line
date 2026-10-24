@@ -1,4 +1,12 @@
+import fs from 'fs';
+import path from 'path';
 import { config } from '../config';
+
+const FILE = path.join(__dirname, '..', '..', 'data', 'guardian.log');
+try { fs.mkdirSync(path.dirname(FILE), { recursive: true }); } catch {}
+function tee(line: string): void {
+  try { fs.appendFileSync(FILE, `${new Date().toISOString().slice(11, 19)} ${line}\n`); } catch {}
+}
 
 const LEVELS = { debug: 10, info: 20, warn: 30, error: 40 } as const;
 type Level = keyof typeof LEVELS;
@@ -22,6 +30,7 @@ export const shortSid = (callSid: string) => callSid.slice(-6);
 function emit(level: Level, step: string, msg: string): void {
   if (LEVELS[level] < threshold) return;
   const line = `[Wessuwan] [${step}] ${msg}`;
+  tee(line);
   if (level === 'error') console.error(line);
   else if (level === 'warn') console.warn(line);
   else console.log(line);
