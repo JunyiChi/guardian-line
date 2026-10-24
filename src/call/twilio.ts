@@ -83,7 +83,14 @@ export async function kick(conferenceSid: string, participantCallSid: string): P
   if (b) b.kicked = true;
   // The caller's leg has endConferenceOnExit=true; clear it first or removing the caller ends the call for everyone.
   await twilio('POST', `/Conferences/${conferenceSid}/Participants/${participantCallSid}.json`, { EndConferenceOnExit: 'false' }).catch(() => undefined);
-  await twilio('DELETE', `/Conferences/${conferenceSid}/Participants/${participantCallSid}.json`);
+  try {
+    await twilio('DELETE', `/Conferences/${conferenceSid}/Participants/${participantCallSid}.json`);
+  } catch (err: any) {
+    // Some Twilio-compatible APIs don't support removing a participant: end the caller's leg instead.
+    // The caller leg has endConferenceOnExit=false, so the protected person (and family) stay connected.
+    log.warn('call', `remove participant failed (${err?.message ?? err}); ending the caller's leg instead`);
+    await endCall(participantCallSid);
+  }
 }
 
 /** ConferenceSid for a bridge, looked up by friendly name if no status callback has delivered it yet. */

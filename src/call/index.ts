@@ -71,10 +71,12 @@ export function mediaUpgradeAllowed(req: IncomingMessage): boolean {
 /** Both legs end the conference when they leave, so neither party is ever left alone with silence. */
 function conferenceTwiml(name: string, caller: boolean): string {
   const cb = config.publicUrl ? ` statusCallback="${escapeXml(config.publicUrl)}/twilio/conference-status" statusCallbackEvent="start end join leave"` : '';
-  // waitUrl="" = no hold music while the caller waits the few seconds until the protected person answers.
+  // waitUrl -> our own silent TwiML: no hold music while the caller waits for the protected person
+  // (waitUrl="" works on Twilio but is undocumented on SignalWire).
+  const wait = config.publicUrl ? `${escapeXml(config.publicUrl)}/twilio/wait` : '';
   // The caller's leg does NOT end the conference (so it can be removed while the protected person stays
   // with their family); callerLeft() ends the protected leg when the caller hangs up by themselves.
-  return `<Dial><Conference beep="false" waitUrl="" startConferenceOnEnter="true" endConferenceOnExit="${caller ? 'false' : 'true'}"${cb}>${escapeXml(name)}</Conference></Dial>`;
+  return `<Dial><Conference beep="false" waitUrl="${wait}" waitMethod="GET" startConferenceOnEnter="true" endConferenceOnExit="${caller ? 'false' : 'true'}"${cb}>${escapeXml(name)}</Conference></Dial>`;
 }
 
 /** Dials the protected person into the caller's conference. Runs right after the webhook response is sent. */
@@ -195,6 +197,11 @@ export function setupCall(app: Express, wss: WebSocketServer): void {
     if (event === 'conference-end') dropBridge(b.callerCallSid);
   });
 
+  /** Conference wait music: silence. */
+  app.all('/twilio/wait', (_req, res) => {
+    res.type('text/xml').send('<Response><Pause length="20"/><Redirect method="GET">' + escapeXml(`${config.publicUrl}/twilio/wait`) + '</Redirect></Response>');
+  });
+
   /** The family member answered our alert call: summary + keypad menu. */
   app.all('/twilio/family-call', requireTwilio, (req, res) => {
     const caller = String(req.query.caller ?? '');
@@ -225,7 +232,8 @@ export function setupCall(app: Express, wss: WebSocketServer): void {
       return;
     }
     // Family leg never ends the conference when it leaves.
-    const join = `<Dial><Conference beep="false" waitUrl="" startConferenceOnEnter="true" endConferenceOnExit="false">${escapeXml(b.name)}</Conference></Dial>`;
+    const wait = config.publicUrl ? `${escapeXml(config.publicUrl)}/twilio/wait` : '';
+    const join = `<Dial><Conference beep="false" waitUrl="${wait}" waitMethod="GET" startConferenceOnEnter="true" endConferenceOnExit="false">${escapeXml(b.name)}</Conference></Dial>`;
     if (digit === '2') {
       const conf = await ensureConferenceSid(b).catch(() => null);
       if (conf) {
