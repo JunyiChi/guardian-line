@@ -35,7 +35,7 @@ Built on Wessuwan's MIT telephony pipeline (declared in the README); the traject
 No App (primary) · AI-powered consumer products for 1 billion people
 
 ## Links
-- GitHub: _fill after push_
+- GitHub: https://github.com/JunyiChi/guardian-line
 - Video: _fill after upload_
 - Live dashboard (while the laptop is up): https://builders-composer-hiv-uniform.trycloudflare.com/dashboard
 
