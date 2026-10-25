@@ -47,7 +47,10 @@ export interface Bridge {
   from: string;
   /** Set before we remove the caller on purpose, so their leaving doesn't end the protected person's call. */
   kicked?: boolean;
+  /** Set while the protected leg is redirected to hear a whisper and rejoin; its leave must not end the call. */
+  whispering?: boolean;
 }
+export const isTwilio = () => config.twilio.apiBase.includes('twilio.com');
 /** Keyed by the caller's CallSid, which is also the CallSid of the media stream / transcript / detector. */
 const bridges = new Map<string, Bridge>();
 export const getBridge = (callerCallSid: string) => bridges.get(callerCallSid);
@@ -143,6 +146,16 @@ export async function whisper(callSid: string, opts: { text?: string; play?: str
     return 'announce';
   }
   const b = getBridge(callSid);
+  if (b && b.seniorCallSid && !isTwilio() && opts.text) {
+    // SignalWire accepts AnnounceUrl but never fetches it. Instead the protected leg leaves the conference,
+    // hears the whisper alone (the caller hears a few seconds of silence) and rejoins. The protected leg has
+    // endConferenceOnExit=false, and conference-status ignores its leave while `whispering` is set.
+    b.whispering = true;
+    setTimeout(() => { b.whispering = false; }, 30_000).unref();
+    const rq = new URLSearchParams({ text: opts.text, lang: opts.lang ?? '', conf: b.name });
+    await twilio('POST', `/Calls/${b.seniorCallSid}.json`, { Url: `${config.publicUrl}/twilio/whisper-rejoin?${rq}`, Method: 'POST' });
+    return 'announce';
+  }
   if (b && b.seniorCallSid && (await ensureConferenceSid(b).catch(() => null))) {
     await announce(b.conferenceSid!, b.seniorCallSid, url);
     return 'announce';

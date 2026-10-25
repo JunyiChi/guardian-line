@@ -74,14 +74,15 @@ export function mediaUpgradeAllowed(req: IncomingMessage): boolean {
 }
 
 /** Both legs end the conference when they leave, so neither party is ever left alone with silence. */
-function conferenceTwiml(name: string, caller: boolean): string {
+function conferenceTwiml(name: string, _caller: boolean): string {
   const cb = config.publicUrl ? ` statusCallback="${escapeXml(config.publicUrl)}/twilio/conference-status" statusCallbackEvent="start end join leave"` : '';
   // waitUrl -> our own silent TwiML: no hold music while the caller waits for the protected person
   // (waitUrl="" works on Twilio but is undocumented on SignalWire).
   const wait = config.publicUrl ? `${escapeXml(config.publicUrl)}/twilio/wait` : '';
-  // The caller's leg does NOT end the conference (so it can be removed while the protected person stays
-  // with their family); callerLeft() ends the protected leg when the caller hangs up by themselves.
-  return `<Dial><Conference beep="false" waitUrl="${wait}" startConferenceOnEnter="true" endConferenceOnExit="${caller ? 'false' : 'true'}"${cb}>${escapeXml(name)}</Conference></Dial>`;
+  // Neither leg ends the conference by itself: the caller can be removed while the protected person stays
+  // with their family, and the protected leg can step out for a whisper and rejoin. conference-status ends
+  // the other leg when someone really hangs up.
+  return `<Dial><Conference beep="false" waitUrl="${wait}" startConferenceOnEnter="true" endConferenceOnExit="false"${cb}>${escapeXml(name)}</Conference></Dial>`;
 }
 
 /** Dials the protected person into the caller's conference. Runs right after the webhook response is sent. */
@@ -198,7 +199,31 @@ export function setupCall(app: Express, wss: WebSocketServer): void {
     }
     log.debug('call', `${shortSid(b.callerCallSid)}: conference ${event}${req.body?.CallSid ? ` (${shortSid(String(req.body.CallSid))})` : ''}`);
     if (event === 'participant-leave' && leg === b.callerCallSid) callerLeft(b.callerCallSid);
+    if (event === 'participant-leave' && leg && leg === b.seniorCallSid && !b.whispering && !b.kicked) {
+      log.info('call', `${shortSid(b.callerCallSid)}: protected person hung up, ending the caller's leg`);
+      endCall(b.callerCallSid).catch(() => undefined);
+    }
+    if (event === 'participant-join' && leg && leg === b.seniorCallSid && b.whispering) {
+      b.whispering = false;
+      log.info('call', `${shortSid(b.callerCallSid)}: protected person rejoined after the whisper`);
+    }
     if (event === 'conference-end') dropBridge(b.callerCallSid);
+  });
+
+  /**
+   * Whisper on providers without a working single-participant announce: the protected leg is redirected
+   * here, hears the text alone, and dials straight back into the conference.
+   */
+  app.all('/twilio/whisper-rejoin', requireTwilio, (req, res) => {
+    const text = String(req.query.text ?? '').slice(0, 400);
+    const conf = String(req.query.conf ?? '');
+    const lang = req.query.lang ? String(req.query.lang) : undefined;
+    const wait = config.publicUrl ? `${escapeXml(config.publicUrl)}/twilio/wait` : '';
+    log.info('whisper', `protected leg stepped out for the whisper (${req.method}): ${text.slice(0, 80)}`);
+    res.type('text/xml').send(
+      `<Response>${text ? sayTwiml(text, lang) : ''}` +
+      `<Dial><Conference beep="false" waitUrl="${wait}" startConferenceOnEnter="true" endConferenceOnExit="false">${escapeXml(conf)}</Conference></Dial></Response>`,
+    );
   });
 
   /** Conference wait music: silence. */
