@@ -1,63 +1,64 @@
-# Guardian Line · 演示手册（2026-10-24）
+# Guardian Line · Demo runbook
 
-## 固定信息
+## Fixed facts
 
-| 项目 | 值 |
+| Item | Value |
 |---|---|
-| Guardian 号码（骗子拨这个） | **+1 619 765 1019** |
-| 老人手机 | +1 619 555 0101（通讯录里存成 "Guardian" 的是上面的号码） |
-| 子女手机 | +1 619 555 0102 |
-| 骗子手机 | +1 619 555 0103 |
-| 看板 | https://builders-composer-hiv-uniform.trycloudflare.com/dashboard |
-| 服务器 | 笔记本 `npm run dev`，隧道已开（**不要再跑 `npm run tunnel`，地址会变**） |
+| Guardian number (the scammer dials this) | **+1 619 765 1019** (SignalWire) |
+| Protected person's phone | +1 619 555 0101 (save the Guardian number in its contacts as "Guardian") |
+| Family phone | +1 619 555 0102 |
+| Scammer phone | +1 619 555 0103 |
+| Dashboard | `PUBLIC_URL/dashboard` |
+| Server | laptop, `npm run dev`; tunnel already running (do **not** restart `npm run tunnel`, the URL changes) |
 
-## 上台前 10 分钟检查
+## Ten minutes before going on
 
 ```
 cd guardian
-npm run doctor            # 全部 ✔（试用提示除外）
+npm run doctor        # everything ✔
 ```
-- 看板打开，右上角显示 online。
-- 老人手机和子女手机音量开到最大，静音开关关掉；老人手机**不要**戴耳机也行，但别外放到评委话筒旁边。
-- 骗子手机拨一次 Guardian 号码，老人接起，两边说一句话，看板两侧出字，挂断。这一通就是最后彩排。
+- Dashboard open and "online".
+- Phones at full volume, silent switch off. Keep the three phones at least a metre apart (a phone picking up another phone's audio confuses the transcript).
+- One rehearsal call: scammer dials, protected person answers, one sentence each, both sides appear on the dashboard, hang up.
 
-## 第一幕 · 推销 + 召唤（约 60 秒）
+## Act 1 · Sales call + "Guardian?" (about 60 s)
 
-1. 骗子拨 +1 619 765 1019，老人接起。骗子先听到 "This call is protected by Guardian"。
-2. 骗子："Hi Margaret, this is Tyler from SunBright Solar. We're doing free energy assessments in your neighborhood, homeowners save forty percent on their bills. Can I book you for Friday?"
-3. 老人："I don't know… **Guardian, is this person for real?**"
-4. 等 3-5 秒，老人听到耳语（内容类似：他在卖太阳能，没有要你付钱或给信息，你自己决定）。骗子听不到。
-5. 老人："I'll think about it." 骗子挂断。
-6. 看板：全程绿色，轨迹条最多亮到 rapport/pressure，动作栏是 "no action" 或 "logged only"。
+1. Scammer dials the Guardian number; the protected person answers. The scammer hears "This call is protected by Guardian."
+2. Scammer: "Hi Margaret, this is Tyler from SunBright Solar. We're doing free home energy assessments in your neighborhood this month."
+3. Protected person: "Oh… what is this about?"
+4. Scammer: "Homeowners are saving forty percent on their electric bills. The assessment is free, no obligation. Can I book you for Friday?"
+5. Protected person, after a beat, clearly: **"Guardian, is this person for real?"**
+6. 2–5 s later she steps out of the call for a moment and hears, alone: "Solar sales call offering a free assessment; no money or information has been asked of you. Your call." Then she is back in the call. The scammer hears a few seconds of silence.
+7. Protected person: "I'll think about it and talk to my son." Scammer: "Of course, I'll follow up next week." Hang up.
+8. Dashboard: green throughout, trajectory at most *rapport*, action "no action" / "logged only", a log line `Answered "Guardian?"`.
 
-**台词**："我们不替老人决定该和谁说话。"
+Line: **"We don't decide who she talks to. She can buy solar panels. But she can always ask."**
 
-## 第二幕 · 银行"安全账户"（约 90 秒）
+## Act 2 · Bank "safe account" (about 90 s)
 
-1. 骗子再拨，老人接起。
-2. 骗子："This is the Chase fraud department. Am I speaking with Margaret?"  老人："Yes."
-3. 骗子："We detected a 2,400 dollar charge in Texas. Did you authorize that?"  老人："No!"
-4. 骗子："Your account is compromised. **Do not hang up and do not tell anyone**, they may be monitoring your phone."
-   → 看板转黄，轨迹条亮到 isolation。
-5. 骗子："**Open your Chase app and move your savings to the secure account I'm giving you now.**"
-   → 3-6 秒内同时发生：老人听到耳语；子女手机响。
-6. 子女接起，听到摘要和菜单，**按 1**，说："Mom, hang up, it's me." 老人："Okay."
-   （或者按 2：骗子被断开，老人和子女继续通话。）
-7. 骗子手机从头到尾只听到老人说话，听不到耳语。
+1. Scammer dials again; the protected person answers.
+2. Scammer: "This is the Chase fraud department. Am I speaking with Margaret?"  — "Yes."
+3. Scammer: "We detected a 2,400 dollar charge in Texas. Did you authorize that?"  — "No!"
+4. Scammer: "Your account is compromised. **Do not hang up and do not tell anyone**, they may be monitoring your phone."
+   → dashboard turns yellow, trajectory reaches *isolation*.
+5. Scammer: "**Open your Chase app and move your savings to the secure account I'm giving you now.**"  — "Okay, what do I do?"
+   → within 3–6 s: the whisper in her ear ("Margaret, this call is a scam. Please hang up now. David is calling you right away.") and the family phone rings.
+6. Family answers, hears the summary and the menu, **presses 1**: "Mom, hang up, it's me." (Or presses 2: the scammer is disconnected and mother and son keep talking.)
+7. The scammer's phone never hears the whisper.
 
-**台词**："诈骗靠隔离。我们打掉的就是隔离：10 秒内家人就在这通电话里。"
+Line: **"Scams run on isolation. We break the isolation: her son is in the call in ten seconds."**
 
-## 兜底
+## Fallbacks
 
-- 电话打不通 / 网络差：看板右上角 **Live sim**，选 `scam-03-bank-fraud-department`，点 ▶。同一剧本走真实模型，Twilio 动作在看板动作日志里显示为 mock。
-- 隧道断了（看板 offline）：在笔记本上 `npm run tunnel`，把新地址填进 `.env` 的 `PUBLIC_URL`，重启 `npm run dev`，再 `npm run doctor -- --fix-webhook`。
-- 耳语没响但看板到了 whisper：说"耳语已触发，电话网络延迟"，继续演子女按键。
+- No phone line / bad network: dashboard → **Live sim** → `scam-03-bank-fraud-department` → ▶. Same script through the real model; telephony actions show as mock in the action log.
+- Tunnel down (dashboard offline): `npm run tunnel`, put the new URL into `.env` as `PUBLIC_URL`, restart `npm run dev`, `npm run doctor -- --fix-webhook`.
+- Whisper not audible but the dashboard reached *whisper*: say "the whisper fired, phone network latency", go on with the family keypad.
 
-## 评委会问的
+## Judges' questions
 
-- **为什么不做 app**：iOS 不给第三方通话音频，也不让第三方挂断运营商电话。
-- **Pixel 有了**：只有 Pixel，警告在屏幕上，没有家人。
-- **误报**：五级介入，推销最多事后一条摘要；回放里 9 个正常剧本零误报。
-- **隐私**：接通先播保护提示，白名单不经过我们，不存音频。
-- **延迟**：每句判断约 5 秒（Opus 经中转），说真实数字。
-- **基于开源**：Wessuwan（MIT）的电话管线；检测、耳语、按键、分级、唤醒是今天写的，README 有 diff。
+- **Why not an app?** iOS gives no third party access to call audio, nor the right to end a carrier call. An app could only show a pop-up, which is what a text does, with an install step on top.
+- **Pixel does this.** Pixel only, warning on a screen while the phone is on her ear, no family loop.
+- **False positives?** Five intervention levels; a sales call is at most a summary after the call. 9 normal calls replayed: zero alarms.
+- **Privacy?** A protection notice before any audio reaches the model, trusted numbers never processed, no audio stored, transcript in memory only.
+- **Latency?** About 5 s per sentence (Opus through a proxy); say the real number.
+- **Built on open source?** Wessuwan's MIT telephony pipeline; the detector, whisper, keypad, policy and wake word were written today. The README has the diff.

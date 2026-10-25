@@ -33,3 +33,6 @@ npm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Chinese working notes stay local
+docs-zh/

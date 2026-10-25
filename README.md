@@ -75,6 +75,12 @@ New in this hackathon (`git log upstream/main..guardian`):
 - the **family keypad menu** (press 1 join / 2 drop the caller) and the **five-level intervention policy** capped by the family;
 - SMS banner on the protected person's phone, end-of-call summaries, a **live simulation mode** through the real model, trajectory panel and intervention log on the dashboard, bilingual test scripts with checkpoints.
 
+## Docs
+
+- [ARCHITECTURE.md](ARCHITECTURE.md): system, design decisions, deployment without an app, repository map.
+- [DEMO.md](DEMO.md): the two-act demo runbook, fallbacks, judges' questions.
+- [SUBMISSION.md](SUBMISSION.md): submission text and video script.
+
 ## Privacy
 
 The caller hears a protection notice before any audio reaches the model (California is an all-party-consent state). Trusted numbers are never processed. No audio is stored; transcripts live in memory for the duration of the call; flagged calls leave only a short encrypted summary. The family receives summaries, not recordings.
