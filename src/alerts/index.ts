@@ -73,6 +73,7 @@ const T = {
     whisperDefault: (name: string, child: string) => `${name}, this call is a scam. Please hang up now. ${child} is calling you right away.`,
     askNone: (_child: string) => `Nothing wrong so far. Keep talking, I am here.`,
     askLow: (reason: string) => `${reason} No money or information has been asked of you. Your call.`,
+    askSales: () => `This is a sales call. Nobody has asked you for money or information. It is your call.`,
     askMid: (reason: string, asks: string) => `Be careful. ${reason} They want you to ${asks}. You do not have to decide anything on this call.`,
     familyCall: (name: string, summary: string) => `Guardian alert. ${name} is on a call that looks like a scam. ${summary} Press 1 to join the call now. Press 2 to disconnect the caller and talk to ${name}.`,
   },
@@ -84,6 +85,7 @@ const T = {
     whisperDefault: (name: string, child: string) => `${name}，这个电话是骗子，先挂掉。${child}马上打给你。`,
     askNone: (_child: string) => `我还没听到问题，你继续聊，我在。想让我再看一眼就再叫我一声。`,
     askLow: (reason: string) => `${reason} 对方没有要你付钱或给信息，你自己决定。`,
+    askSales: () => `这是推销电话。对方没有要你付钱或给信息，你自己决定。`,
     askMid: (reason: string, asks: string) => `小心。${reason} 对方想让你${asks}。这通电话里你不需要做任何决定。`,
     familyCall: (name: string, summary: string) => `Guardian 警报。${name}正在接一通疑似诈骗电话。${summary} 按 1 立即加入通话。按 2 断开对方并和${name}通话。`,
   },
@@ -213,6 +215,7 @@ async function answerAsk(callSid: string, s: CallAlerts): Promise<void> {
   if (!g) text = t.askNone(getFamily().childName);
   else if (s.level >= 4) text = g.whisperText || t.whisperDefault(settings.get().protectedName, getFamily().childName);
   else if (s.level >= 2 || g.requests.length) text = t.askMid(g.reason ?? '', g.requests.join(', ') || '…');
+  else if (g.category === 'sales_marketing') text = t.askSales();
   else text = t.askLow(g.reason ?? '');
   const lang = baseLang(getFamily().language);
   try {
