@@ -8,7 +8,16 @@ Guardian Line
 ## One-liner
 A family member who lives in the phone line: older adults keep answering their own calls; when a call turns into a scam, Guardian whispers to them privately, answers when they ask it, and brings their family into the call with one key press. No app, no screen, any phone.
 
-## Short description (form field)
+## Form field 5 · "2 Sentence Description of the Project"
+Guardian Line is a family member who lives in the phone line: older adults keep answering their own calls, and when a call turns into a scam, Guardian whispers to them privately, answers when they ask "Guardian, is this real?", and rings their family, who press 1 to join the call. No app and no screen on any phone: calls are forwarded through a Guardian number, both sides are transcribed live, and Claude scores the conversation as a scam trajectory against family context, so sales calls stay green while "move your savings to a safe account" triggers the whisper within seconds.
+
+## Form field 4 · Track
+No App  (single choice; the 1-billion-people track is the secondary story, mention it in the video)
+
+## Form field 8 · Hosted Project Link (optional)
+https://builders-composer-hiv-uniform.trycloudflare.com/dashboard  — judges can press "Live sim" and watch a scripted scam run through the real model. Only works while the laptop and tunnel are up.
+
+## Long description (README / backup)
 Phone scams are the #1 fraud channel for people over 75, and every existing defense either puts a warning on a screen (Pixel), answers the phone for them (gatekeeper apps), or silently cuts them off (carrier models). Grandma's phone is on her ear, and her son is 2,000 miles away.
 
 Guardian Line sits on the phone line itself. The family forwards the protected person's calls through a Guardian number; she answers every call exactly as before. Both sides of the call are transcribed live, and Claude scores the conversation as a trajectory (rapport → pressure → isolation → extraction), looking at what the caller is asking her to DO rather than who they claim to be, checked against family context (the real grandson's age, the pharmacy she uses, the parcel she is expecting).
